@@ -1,0 +1,32 @@
+services:
+  backend:
+    build:
+      context: ./chat_app_backend
+      dockerfile: chat_app/Dockerfile
+    container_name: chat-backend
+    command: python chat_app/manage.py runserver 0.0.0.0:8000
+    volumes:
+      - ./chat_app_backend:/app
+    ports:
+      - "8000:8000"
+    environment:
+      - DEBUG=1
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    depends_on:
+      - redis
+
+  frontend:
+    build:
+      context: ./chat_app_front/chat-app-front
+    container_name: chat-frontend
+    ports:
+      - "3000:80"
+    depends_on:
+      - backend
+
+  redis:
+    image: redis:7-alpine
+    container_name: chat-redis
+    ports:
+      - "6379:6379"
