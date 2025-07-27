@@ -7,7 +7,7 @@ Also implement Websocket with redis and redis-channel for the consuming of the m
 For the database i decide to implemented the following tables.
 With the objective of reducing the coding time, the SQLite was used as a predeterminated database.
  <p align="center">
-  <img src="https://github.com/aguusandy/chat-app/blob/master/imgs/der_chat_app.png" alt="DER" width="480"/>
+  <img src="https://github.com/aguusandy/chat-app/blob/master/imgs/der_chat_app.png" alt="DER" width="700"/>
 </p>
 
 ## Features
