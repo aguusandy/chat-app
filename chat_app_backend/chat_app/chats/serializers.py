@@ -14,7 +14,7 @@ from rest_framework import serializers
 
 from django.contrib.auth.models import User
 
-from .models import Chat, ChatParticipant, Message
+from .models import Chat, ChatParticipant, Message, MessageState, State
 
 
 class ChatSerializer(serializers.Serializer):
@@ -40,6 +40,7 @@ class ChatSerializer(serializers.Serializer):
         chat_id = data.get('chat_id', None)
         participants = data.get('participants', None)
         chat_participants = data.get('chat_participants', None)
+        is_eliminated = data.get('is_eliminated', None)
 
         if participants is None or participants == []:
             raise serializers.ValidationError({'participants': "To create a Chat there must be some users."})
@@ -54,7 +55,7 @@ class ChatSerializer(serializers.Serializer):
             if chat is not None:            
                 raise serializers.ValidationError({'chat_id': "The chat with this id is already created."})
             
-            if chat.is_eliminated:
+            if is_eliminated is not None and chat.is_eliminated:
                 raise serializers.ValidationError({'is_eliminated': "The chat is already eliminated."})
 
         if chat_participants is not None:
@@ -74,7 +75,8 @@ class ChatSerializer(serializers.Serializer):
         validated_data = {
             'chat': chat if chat is not None else None,
             'chat_participants_validated': chat_participants_validated if chat_participants_validated is not None else None,
-            'participants_validated': participants_validated
+            'participants_validated': participants_validated,
+            'is_eliminated': is_eliminated,            
         }
 
         return validated_data
@@ -100,9 +102,43 @@ class ChatSerializer(serializers.Serializer):
                     data_created = serializer.create(validated_data=serializer.validated_data)                
 
         return chat.to_dict()
+
     
     def update(self, validated_data: dict) -> dict:
-        return None
+        chat = validated_data.get('chat', None)
+        participants = validated_data.get('participants', None)
+        chat_participants = validated_data.get('chat_participants', None)
+        chat_name = validated_data.get('chat_name', None)
+        
+        if chat.is_eliminated == True:
+            raise serializers.ValidationError({'chat_id': "The chat can't be updated because is already eliminated."})
+        
+        with transaction.atomic():
+            if chat_name is not None:
+                chat.chat_name = chat_name if chat.chat_name != chat_name else chat_name
+
+            chat.save()
+
+            for participant in participants:
+                data = {'user_id': participant.pk, 'chat_id': chat.pk}
+                serializer = ChatParticipantSerializer(data=data)
+                if serializer.is_valid():
+                    data_created = serializer.update(validated_data=serializer.validated_data)   
+        return chat.to_dict()
+
+    def eliminate(self, validated_data: Chat):
+        chat = validated_data.get('chat', None)
+        is_eliminated = validated_data.get('chat', None)
+
+        if chat.is_eliminated == True:
+            raise serializers.ValidationError({'chat_id': "The chat can't be eliminated because is already eliminated."})
+        
+        with transaction.atomic():
+            chat.is_eliminated = True
+            chat.date_eliminated = datetime.now()
+
+            chat.save()
+        return chat.to_dict()
 
     
     def to_representation(self, instance: Chat):
@@ -188,6 +224,38 @@ class ChatParticipantSerializer(serializers.Serializer):
 
         return chat_participant.to_dict()
     
+    def update(self, validated_data: dict) -> dict:
+        user_id = validated_data.get('user_id', None)
+        chat_id = validated_data.get('chat_id', None)
+
+        if user_id is None:
+            raise serializers.ValidationError({'user_id': "To update the parcipitand the user_id is required."})
+        
+        if chat_id is None:
+            raise serializers.ValidationError({'chat_id': "To update the parcipitand the chat_id is required."})
+
+        try:
+            user = User.objects.get(pk=user_id)
+        except User.DoesNotExist:
+            raise serializers.ValidationError({'user': "The user doesn't exist or wasn't found."})
+
+        try:
+            chat = Chat.objects.get(pk=chat_id)
+        except Chat.DoesNotExist:
+            raise serializers.ValidationError({'chat': "The chat doesn't exist or wasn't found."})
+
+        if chat.is_eliminated:
+            raise serializers.ValidationError({'chat': "The chat can't be updated because is eliminated."})
+
+        chat_participant = ChatParticipant.objects.filter(user=user, chat=chat).first()
+        if chat_participant:
+            chat_participant.delete()
+            return {'detail': 'The participant was eliminated succesfully from the chat.'}
+        else:
+            chat_participant = ChatParticipant.objects.create(user=user, chat=chat)
+            return chat_participant.to_dict()
+    
+    
 
 class MessageSerializer(serializers.Serializer):
     message_id = serializers.IntegerField(allow_null=True, required=False)
@@ -219,12 +287,16 @@ class MessageSerializer(serializers.Serializer):
 
         if chat is None:
             raise serializers.ValidationError({'chat': "To send a message is needed a chat."})
+        else:
+            chat = Chat.objects.get(pk=chat)
         
         if user_sender is None:
             raise serializers.ValidationError({'user_sender': "To send a message is needed a user."})
+        else:
+            user_sender = User.objects.get(pk=user_sender)
         
         chat_participant = ChatParticipant.objects.get(chat=chat,user=user_sender)
-        print(f"chat_participant {chat_participant}")
+        
         if chat_participant is None:
             raise serializers.ValidationError({'not_allowed': "The user has no permission to send messages in this chat."})
         
@@ -246,6 +318,7 @@ class MessageSerializer(serializers.Serializer):
             'body': body,
             'is_edited': is_edited if is_edited is not None else None,
             'is_eliminated': is_eliminated if is_eliminated is not None else None,
+            'message': message if message is not None else None
         }
 
         return validated_data
@@ -266,12 +339,64 @@ class MessageSerializer(serializers.Serializer):
                 body=body,
                 is_edited=False,
                 is_eliminated=False
-            )         
+            )
+            
+            message_state = MessageState.objects.create(
+                state = State.objects.get(pk=1),
+                message = message
+            )       
 
         return message.to_dict()
     
     def update(self, validated_data: dict) -> dict:
-        return None
+        message = validated_data.get('message', None)
+        body = validated_data.get('body',None)
+        user_sender = validated_data.get('user_sender',None)
+        is_edited = validated_data.get('is_edited', None)
+
+        if message is None: 
+            raise serializers.ValidationError({'message': "The message wasn't found or doesn't exists."})
+        
+        if message.user_sender != user_sender:
+            raise serializers.ValidationError({'message': "Only the user that created the message can update it."})
+        
+        with transaction.atomic():
+            if is_edited == True:
+                message_state = MessageState.objects.create(
+                    state = State.objects.get(pk=2),
+                    message = message,
+                    last_body = message.body
+                )
+                message.is_edited = True
+                message.body = body
+            message.save()
+
+        return message.to_dict()
+    
+    def eliminate(self, validated_data: dict) -> dict:
+        message = validated_data.get('message', None)
+        is_eliminated = validated_data.get('is_eliminated', None)
+        user_sender = validated_data.get('user_sender',None)
+
+        if message is None: 
+            raise serializers.ValidationError({'message': "The message wasn't found or doesn't exists."})
+        
+        if message.is_eliminated == True and is_eliminated == True:
+            raise serializers.ValidationError({'message': "The message is eliminated and can't be update."})
+        
+        if message.user_sender != user_sender:
+            raise serializers.ValidationError({'message': "Only the user that created the message can update it."})
+        
+        with transaction.atomic():
+            if is_eliminated == True:
+                message_state = MessageState.objects.create(
+                    state = State.objects.get(pk=3),
+                    message = message,
+                    last_body = message.body
+                )
+                message.is_eliminated = True
+                message.save()
+        return message.to_dict()
 
     
     def to_representation(self, instance: Chat):
