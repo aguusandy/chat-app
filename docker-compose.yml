@@ -21,7 +21,12 @@ services:
       context: ./chat_app_front/chat-app-front
     container_name: chat-frontend
     ports:
-      - "3000:80"
+      - "5173:5173"
+    volumes:
+      - ./chat_app_front/chat-app-front:/app
+      - /app/node_modules
+    environment:
+      - CHOKIDAR_USEPOLLING=true
     depends_on:
       - backend
 

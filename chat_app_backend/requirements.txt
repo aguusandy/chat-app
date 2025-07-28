@@ -2,3 +2,5 @@ Django
 djangorestframework
 channels
 channels-redis
+django-cors-headers
+djangorestframework-simplejwt
