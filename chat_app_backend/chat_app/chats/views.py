@@ -50,7 +50,7 @@ class ChatViewSet(viewsets.ViewSet):
             serializer = self.serializer_class(instance=chat)
             serialized_chats.append(serializer.data)
         
-        return Response(serialized_chats)
+        return Response({ 'chats':serialized_chats }, status=status.HTTP_200_OK)
 
     def create(self, request):
         """

@@ -4,6 +4,10 @@ import viteLogo from '/vite.svg'
 import './App.css'
 import LoginComponent from './Login'
 
+import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
+import Home from './Home'
+
+
 function App() {
   
   useEffect(()=> {
@@ -12,7 +16,23 @@ function App() {
 
   return (
     <>
-      <LoginComponent/>
+          <BrowserRouter basename="">
+            <Routes>
+              <Route
+                path="*"
+                element={<Navigate to="" />}
+              />
+              <Route
+                path=""
+                element={<LoginComponent/>}
+              />
+              <Route
+                path="/home"
+                element={<Home/>}
+              />
+
+            </Routes>
+            </BrowserRouter>
     </>
   )
 }

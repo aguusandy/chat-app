@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import {
   Box,
   Card,
@@ -7,16 +8,49 @@ import {
   TextField,
   Button,
   Container,
-  Paper
+  Paper,
+  Alert,
+  Collapse,
+  IconButton,
+  AlertTitle
 } from '@mui/material'
 import './App.css'
+import apiRequest from './Apis'
+import CloseIcon from '@mui/icons-material/Close';
 
 function LoginComponent() {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  
+  const [errors, setErrors] = useState('');
+  const navigate = useNavigate();
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     console.log('Login attempt:', { username, password })
+    const body = {
+      username: username,
+      password: password
+    }
+
+    try {
+      const response = await apiRequest('api/login/', 'POST', body);
+      console.log('response ',response)
+      if( response.status === 200 ){
+        if( response.token ){
+          sessionStorage.setItem('token', response.token)
+        }
+        if( response.user_data ){
+          sessionStorage.setItem('userData', JSON.stringify(response.user_data))
+        }
+        navigate('/home');
+      }else{
+        setErrors(true);
+      }
+
+      // return response;
+    } catch (error) {
+      console.error('Error at login:', error);
+    }
   }
 
   useEffect(() => {
@@ -39,7 +73,7 @@ function LoginComponent() {
           elevation={8}
           sx={{
             borderRadius: 3,
-            maxHeight: '75vh',
+            // maxHeight: '75vh',
             maxWidth: '50vw',
             width: '100%',
             overflow: 'hidden'
@@ -110,7 +144,6 @@ function LoginComponent() {
                 }}
               />
 
-              {/* Campo Password */}
               <TextField
                 fullWidth
                 label="Password"
@@ -124,6 +157,27 @@ function LoginComponent() {
                   }
                 }}
               />
+              { errors && 
+                <Collapse in={errors}>
+                  <Alert
+                    severity="error"
+                    variant="outlined"
+                    action={
+                      <IconButton
+                        aria-label="close"
+                        color='inherit'
+                        onClick={() => {
+                          setErrors(false);
+                        }}
+                      >
+                        <CloseIcon fontSize="inherit" />
+                      </IconButton>
+                    }
+                  >
+                    <AlertTitle>Incorrect username or password.</AlertTitle>
+                  </Alert>
+                </Collapse>
+              }
 
               <Button
                 fullWidth
@@ -136,7 +190,6 @@ function LoginComponent() {
                   fontSize: '1.1rem',
                   fontWeight: 600,
                   textTransform: 'none',
-                  marginTop: 2,
                   background: 'linear-gradient(45deg, #667eea 30%, #764ba2 90%)',
                   '&:hover': {
                     background: 'linear-gradient(45deg, #5a6fd8 30%, #6a4190 90%)'
