@@ -11,7 +11,9 @@ import {
     Alert,
     Collapse,
     IconButton,
-    AlertTitle
+    AlertTitle,
+    Modal,
+    Grid
   } from '@mui/material'
 import './App.css'
 import apiRequest from './Apis'
@@ -19,13 +21,15 @@ import SentimentVerySatisfiedIcon from '@mui/icons-material/SentimentVerySatisfi
 import SendIcon from '@mui/icons-material/Send';
 import BorderColorIcon from '@mui/icons-material/BorderColor';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
+import Chat from './chats/Chat';
 
 
 function Home() {
-  const userData = JSON.parse(sessionStorage.userData)
+  const [userData, setUserData] = useState({});
   const [chats, setChats] = useState([]);
   const [loading, setLoading] = useState(false);
-
+  const [chatSelected, setChatSelected] = useState(null);
+  const [openChat, setOpenChat] = useState(false);
 
   const fetchChats = async () => {
 
@@ -36,8 +40,25 @@ function Home() {
     console.log('chats ',response)
   }
 
-  useEffect(() => {
+  const handleNewChat = () => {
+    console.log('handle new chat')
+  }
 
+  const handleOpenChat = (chat) => {
+    console.log('handle open chat', chat)
+    setChatSelected(chat)
+    setOpenChat(true);
+  } 
+
+  const handleCloseChat = () => {
+    setChatSelected(false);
+    setOpenChat(false);
+  }
+ 
+  useEffect(() => {
+    if( !userData ){
+      setUserData(JSON.parse(sessionStorage.userData));
+    }
     if( !loading ){
         fetchChats();
     }
@@ -52,7 +73,8 @@ function Home() {
         alignItems: 'center',
         justifyContent: 'center',
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        padding: 2
+        padding: 2,
+        paddingTop: 4
       }}
     >
     <Container maxWidth="sm">
@@ -122,6 +144,7 @@ function Home() {
                     transition: 'all 1s linear',
                     "&:hover": { color: "white", background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
                     }}
+                    onClick={ handleNewChat }
                 >
                     Start a new
                 </Button>
@@ -266,6 +289,33 @@ function Home() {
           </Card>
         </Paper>
       </Container>
+
+      <Modal
+          open={openChat}
+          onClose={handleCloseChat}
+          aria-labelledby="modal-modal-title"
+          aria-describedby="modal-modal-description"
+      >
+          <Grid
+            container
+            justifyContent="center"
+            alignItems="center"
+            sx={{
+                position: "absolute",
+                width: "100%",
+                height: "100%",
+                bgcolor: "rgba(0, 0, 0, 0.5)",
+                zIndex: 9999,
+            }}
+          >
+            <Grid item xs={12} sm={10} md={9} lg={9}>
+              <Box sx={{ bgcolor: "background.paper", boxShadow: 24, borderRadius: 4 }} >
+                <Chat chatData={chatSelected} onClose={handleCloseChat}/>
+              </Box>
+            </Grid>
+          </Grid>
+      </Modal>
+      
     </Box>
   )
 }

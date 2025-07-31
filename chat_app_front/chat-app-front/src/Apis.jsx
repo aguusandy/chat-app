@@ -1,5 +1,9 @@
 const apiRequest = async (url, method, data = null) => {
-    const baseUrl = 'http://127.0.0.1:8000/';
+  const baseUrl = 'http://127.0.0.1:8000/';
+
+  if( url !== 'api/login/' && !(sessionStorage.token && sessionStorage.userData)){
+    window.location.replace(`http://127.0.0.1:5173/login`)
+  }
 
 
     let token;

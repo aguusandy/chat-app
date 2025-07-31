@@ -18,7 +18,7 @@ import './App.css'
 import apiRequest from './Apis'
 import CloseIcon from '@mui/icons-material/Close';
 
-function LoginComponent() {
+function LoginComponent({ setShowAvatar }) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
   
@@ -42,6 +42,7 @@ function LoginComponent() {
         if( response.user_data ){
           sessionStorage.setItem('userData', JSON.stringify(response.user_data))
         }
+        setShowAvatar(true);
         navigate('/home');
       }else{
         setErrors(true);
@@ -60,12 +61,12 @@ function LoginComponent() {
   return (
     <Box
       sx={{
-        minHeight: '100vh',
+        minHeight: '90vh',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
         background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-        padding: 2
+        paddingX: 2
       }}
     >
       <Container maxWidth="sm">

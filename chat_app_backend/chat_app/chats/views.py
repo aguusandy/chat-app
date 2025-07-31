@@ -22,7 +22,7 @@ class ChatViewSet(viewsets.ViewSet):
         '''
             Return the individual chat with the information about it.
             This information includes, the participants (users), messages and their attachments
-            Endpoint: 
+            Endpoint: /chats/{pk}
 
         '''
         chat_id = pk
@@ -38,7 +38,7 @@ class ChatViewSet(viewsets.ViewSet):
     def list(self, request):
         '''
             Return all chat that the participate the user
-            Endpoint: 
+            Endpoint: /chats
 
         '''
         user_chats = Chat.objects.filter(
