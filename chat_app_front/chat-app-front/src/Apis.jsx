@@ -43,7 +43,7 @@ const apiRequest = async (url, method, data = null) => {
           responseData = await response.json();
         }
       } else {
-        responseData = { mensaje: "El objeto no tiene contenido" };
+        responseData = { mensaje: "Object with no content" };
       }
   
       responseData.status = response.status;
@@ -55,7 +55,7 @@ const apiRequest = async (url, method, data = null) => {
       return responseData;
       
     } catch (error) {
-      console.error('Error en la petición:', error);
+      console.error('Error in API request:', error);
       throw error;
     }
   };

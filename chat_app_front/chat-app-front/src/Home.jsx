@@ -13,7 +13,8 @@ import {
     IconButton,
     AlertTitle,
     Modal,
-    Grid
+    Grid,
+    LinearProgress
   } from '@mui/material'
 import './App.css'
 import apiRequest from './Apis'
@@ -22,6 +23,9 @@ import SendIcon from '@mui/icons-material/Send';
 import BorderColorIcon from '@mui/icons-material/BorderColor';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import Chat from './chats/Chat';
+import EditChat from './chats/EditChat.jsx';
+import NewChat from './chats/NewChat.jsx';
+import DeleteChat from './chats/DeleteChat.jsx';
 
 
 function Home() {
@@ -30,18 +34,27 @@ function Home() {
   const [loading, setLoading] = useState(false);
   const [chatSelected, setChatSelected] = useState(null);
   const [openChat, setOpenChat] = useState(false);
+  const [openEditChat, setOpenEditChat] = useState(false);
+  const [openNewChat, setOpenNewChat] = useState(false);
+  const [openDeleteChat, setOpenDeleteChat] = useState(false);
+  const [refresh, setRefresh] = useState(false);
 
   const fetchChats = async () => {
 
-    const response = await apiRequest('chats', 'GET');
-    if( response.status === 200 ){
-        setChats(response.chats)
+    try {
+      const response = await apiRequest('chats', 'GET');
+      console.log('chats ',response)
+      if( response.status === 200 ){
+          setChats(response.chats)
+      }
+    } catch (error) {
+      console.log('Error fetching chats:', error);
     }
-    console.log('chats ',response)
   }
 
   const handleNewChat = () => {
     console.log('handle new chat')
+    setOpenNewChat(true);
   }
 
   const handleOpenChat = (chat) => {
@@ -50,20 +63,37 @@ function Home() {
     setOpenChat(true);
   } 
 
-  const handleCloseChat = () => {
+  const handleCloseChat = (setFunction) => {
     setChatSelected(false);
-    setOpenChat(false);
+    setFunction(false);
   }
- 
+
+  const handleEditChat = (chat) => {
+    console.log('edit chat', chat)
+    setChatSelected(chat)
+    setOpenEditChat(true);
+  }
+
+  const handleDeleteChat = (chat) => {
+    console.log('delete chat')
+    setChatSelected(chat);
+    setOpenDeleteChat(true);
+  }
+
   useEffect(() => {
     if( !userData ){
       setUserData(JSON.parse(sessionStorage.userData));
     }
-    if( !loading ){
-        fetchChats();
+    if( !loading || refresh){
+      setLoading(true);
+      fetchChats();
+      setLoading(false);
+      if (refresh) {
+        setRefresh(false);
+      }
     }
-    
-  },[])
+  },[refresh])
+
 
   return (
     <Box
@@ -100,26 +130,28 @@ function Home() {
                 padding: 4,
                 display: 'flex',
                 flexDirection: 'column',
-                gap: 2
+                gap: 2,
+                minHeight: '60vh'
               }}
             >
             <Typography
                 variant="h4"
                 component="h1"
                 sx={{
-                  fontWeight: '18px',
-                  color: 'text.primary',
+                  fontSize: '1.8rem',
                   marginBottom: 1,
                   mx:'auto',
-                  textDecoration: 'underline'
+                  textDecoration: 'underline',
+                  color:'#764ba2',
+                  fontWeight:450
                 }}
               >
-                Welcome {userData.username}
+                Welcome {userData.username} to the chat list
               </Typography>
 
               <Box
                 sx={{
-                    display: 'flex', direction: 'row', my:'auto', gap:1, mx:'auto'
+                    display: 'flex', direction: 'row', mb:'auto', gap:1, mx:'auto'
                 }}
               >
                 <Typography
@@ -135,32 +167,28 @@ function Home() {
                 </Typography>
                 <Button 
                     sx={{
-                    color: '#764ba2',
-                    borderColor: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    border:1,
-                    backgroundColor:'white',
-                    fontSize: "17px",
-                    textAlign: "right",
-                    transition: 'all 1s linear',
-                    "&:hover": { color: "white", background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)' },
+                      border: 2,
+                      color: '#764ba2',
+                      borderRadius: 4,
+                      cursor: 'pointer',
+                      backgroundColor: 'transparent',
+                      '&:hover': {
+                        backgroundColor: '#764ba2',
+                        borderColor: '#764ba2',
+                        color: 'white',
+                      }
                     }}
                     onClick={ handleNewChat }
                 >
                     Start a new
                 </Button>
               </Box>
-
-              <Typography
-                variant="h6"
-                sx={{
-                  color: '#6a4190',
-                  marginBottom: 1,
-                  textDecoration: 'underline'
-                }}
-              >
-                Chat List
-              </Typography>
-              { chats?.length > 0 ?
+              { loading &&
+                <Box sx={{ width: '100%', mb:'auto' }}>
+                  <LinearProgress color="secondary" sx={{ backgroundColor:'#764ba2' }} />
+                </Box>
+              }
+              { !loading && chats?.length > 0 ?
                 <Box
                     sx={{
                         // border: 1,
@@ -177,17 +205,18 @@ function Home() {
                             key={index}
                             sx={{
                                 border: 2,
-                                borderColor: '#5a4b8a',
+                                color: '#764ba2',
                                 borderRadius: 4,
                                 padding: 2,
                                 margin: 1,
                                 cursor: 'pointer',
                                 backgroundColor: 'transparent',
                                 '&:hover': {
-                                    backgroundColor: '#5a4b8a',
+                                    backgroundColor: '#764ba2',
                                     color: 'white',
                                 }
                             }}
+                            onClick={() => handleOpenChat(chat)}
                         >
                             <Box
                                 sx={{
@@ -204,7 +233,7 @@ function Home() {
                                         width:'82%',
                                         fontSize: '1.2rem',
                                         '&:hover': {
-                                            backgroundColor: '#5a4b8a',
+                                            backgroundColor: 'inherit',
                                             color: 'white',
                                         }
                                     }}
@@ -245,7 +274,7 @@ function Home() {
                                             transition: 'all 0.3s ease'
                                         }}
                                     >
-                                        {participant.user}
+                                        {participant.user?.username}
                                     </Typography>
                                 ))}
                             </Box>
@@ -284,7 +313,6 @@ function Home() {
                 </Box>
               }
 
-
             </CardContent>
           </Card>
         </Paper>
@@ -292,6 +320,32 @@ function Home() {
 
       <Modal
           open={openChat}
+          onClose={() => handleCloseChat(setOpenChat)}
+          aria-labelledby="modal-modal-title"
+          aria-describedby="modal-modal-description"
+      >
+          <Grid
+            container
+            justifyContent="center"
+            alignItems="center"
+            sx={{
+                position: "absolute",
+                width: "100%",
+                height: "100%",
+                bgcolor: "rgba(0, 0, 0, 0.5)",
+                zIndex: 9999,
+            }}
+          >
+            <Grid item xs={12} sm={10} md={9} lg={9}>
+              <Box sx={{ bgcolor: "background.paper", boxShadow: 24, borderRadius: 4 }} >
+                <Chat chatData={chatSelected} onClose={() => handleCloseChat(setOpenChat)}/>
+              </Box>
+            </Grid>
+          </Grid>
+      </Modal>
+
+      <Modal
+          open={openEditChat}
           onClose={handleCloseChat}
           aria-labelledby="modal-modal-title"
           aria-describedby="modal-modal-description"
@@ -310,12 +364,61 @@ function Home() {
           >
             <Grid item xs={12} sm={10} md={9} lg={9}>
               <Box sx={{ bgcolor: "background.paper", boxShadow: 24, borderRadius: 4 }} >
-                <Chat chatData={chatSelected} onClose={handleCloseChat}/>
+                <EditChat chatData={chatSelected} onClose={() => handleCloseChat(setOpenEditChat)} setRefresh={setRefresh}/>
               </Box>
             </Grid>
           </Grid>
       </Modal>
-      
+      <Modal
+          open={openNewChat}
+          onClose={handleCloseChat}
+          aria-labelledby="modal-modal-title"
+          aria-describedby="modal-modal-description"
+      >
+          <Grid
+            container
+            justifyContent="center"
+            alignItems="center"
+            sx={{
+                position: "absolute",
+                width: "100%",
+                height: "100%",
+                bgcolor: "rgba(0, 0, 0, 0.5)",
+                zIndex: 9999,
+            }}
+          >
+            <Grid item xs={12} sm={10} md={9} lg={9}>
+              <Box sx={{ bgcolor: "background.paper", boxShadow: 24, borderRadius: 4 }} >
+                <NewChat onClose={() => handleCloseChat(setOpenNewChat)} setRefresh={setRefresh}/>
+              </Box>
+            </Grid>
+          </Grid>
+      </Modal>
+      <Modal
+        open={openDeleteChat}
+        onClose={handleCloseChat}
+        aria-labelledby="modal-modal-title"
+        aria-describedby="modal-modal-description"
+      >
+        <Grid
+          container
+          justifyContent="center"
+          alignItems="center"
+          sx={{
+              position: "absolute",
+              width: "100%",
+              height: "100%",
+              bgcolor: "rgba(0, 0, 0, 0.5)",
+              zIndex: 9999,
+          }}
+        >
+          <Grid item xs={12} sm={10} md={7} lg={5}>
+            <Box sx={{ bgcolor: "background.paper", boxShadow: 24, borderRadius: 4 }} >
+              <DeleteChat onClose={() => handleCloseChat(setOpenDeleteChat)} chatData={chatSelected} setRefresh={setRefresh}/>
+            </Box>
+          </Grid>
+        </Grid>
+      </Modal>
     </Box>
   )
 }

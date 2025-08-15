@@ -12,21 +12,24 @@ import {
   Alert,
   Collapse,
   IconButton,
-  AlertTitle
+  AlertTitle,
+  CircularProgress
 } from '@mui/material'
 import './App.css'
 import apiRequest from './Apis'
 import CloseIcon from '@mui/icons-material/Close';
+import LoginIcon from '@mui/icons-material/Login';
 
 function LoginComponent({ setShowAvatar }) {
   const [username, setUsername] = useState('')
   const [password, setPassword] = useState('')
+  const [login, setLogin] = useState(false);
   
   const [errors, setErrors] = useState('');
   const navigate = useNavigate();
 
   const handleLogin = async () => {
-    console.log('Login attempt:', { username, password })
+    setLogin(true);
     const body = {
       username: username,
       password: password
@@ -52,6 +55,7 @@ function LoginComponent({ setShowAvatar }) {
     } catch (error) {
       console.error('Error at login:', error);
     }
+    setLogin(false);
   }
 
   useEffect(() => {
@@ -194,10 +198,16 @@ function LoginComponent({ setShowAvatar }) {
                   background: 'linear-gradient(45deg, #667eea 30%, #764ba2 90%)',
                   '&:hover': {
                     background: 'linear-gradient(45deg, #5a6fd8 30%, #6a4190 90%)'
-                  }
+                  },
+                  gap: 1
                 }}
               >
                 Log In
+                { login ? 
+                  <CircularProgress color="white" size='1.5rem'/>
+                  :
+                  <LoginIcon />
+                }
               </Button>
 
             </CardContent>

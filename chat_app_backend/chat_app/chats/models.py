@@ -69,7 +69,7 @@ class ChatParticipant(models.Model):
         '''
         return {
             'chat_par_id': self.chat_par_id,
-            'user': self.user.username, 
+            'user': { 'username': self.user.username, 'user_id': self.user.id }, 
             'chat': self.chat.chat_id,
             'date_joined': self.date_joined.strftime("%d/%m/%Y %H:%M") if self.date_joined else None,
         }

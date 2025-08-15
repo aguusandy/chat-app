@@ -57,3 +57,20 @@ def user_logout(request):
             return Response({'message': 'Successfully logged out.'}, status=status.HTTP_200_OK)
         except Exception as e:
             return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)
+        
+
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def user_search(request):
+    if request.method == 'GET':
+        q = request.query_params.get('q', '')
+        users = User.objects.filter(username__icontains=q).exclude(id=request.user.id)
+        data = [
+            {
+                'user_id': user.id,
+                'username': user.username,
+                'email': user.email
+            }
+            for user in users
+        ]
+        return Response(data, status=status.HTTP_200_OK)

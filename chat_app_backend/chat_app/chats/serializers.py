@@ -41,27 +41,28 @@ class ChatSerializer(serializers.Serializer):
         participants = data.get('participants', None)
         chat_participants = data.get('chat_participants', None)
         is_eliminated = data.get('is_eliminated', None)
+        chat_name = data.get('chat_name', None)
 
-        if participants is None or participants == []:
-            raise serializers.ValidationError({'participants': "To create a Chat there must be some users."})
+        if chat_id is None:
+            if participants is None or participants == []:
+                raise serializers.ValidationError({'participants': "To create a Chat there must be some users."})
         
         participants_ids = [variable.get("user_id") for variable in participants] if participants else []
         participants_validated = []
         for participant_id in participants_ids:
             participants_validated.append(User.objects.get(pk=participant_id))
         
+        chat = None
         if chat_id is not None:
             chat = Chat.objects.get(pk=chat_id)
-            if chat is not None:            
-                raise serializers.ValidationError({'chat_id': "The chat with this id is already created."})
             
             if is_eliminated is not None and chat.is_eliminated:
                 raise serializers.ValidationError({'is_eliminated': "The chat is already eliminated."})
 
+        chat_participants_validated = []
         if chat_participants is not None:
             chat_participants_ids = [variable.get("chat_par_id") for variable in chat_participants] if chat_participants else []
-
-            chat_participants_validated = []
+            
             if chat_participants_ids != []:
                 for par_id in chat_participants_ids:
                     chat_participant = ChatParticipant.objects.get(pk=par_id)
@@ -70,22 +71,22 @@ class ChatSerializer(serializers.Serializer):
                 
                 if chat_participants_validated == []:
                     raise serializers.ValidationError({'participants': "To create a Chat there must be some validated users."})
-        
 
         validated_data = {
             'chat': chat if chat is not None else None,
-            'chat_participants_validated': chat_participants_validated if chat_participants_validated is not None else None,
+            'chat_participants_validated': chat_participants_validated,
             'participants_validated': participants_validated,
             'is_eliminated': is_eliminated,            
+            'chat_name': chat_name if chat_name is not None else None
         }
-
         return validated_data
     
 
     def create(self, validated_data: dict) -> dict:
         participants = validated_data.get('participants_validated',None)
-        chat_name = validated_data.get('chat_name', f"Chat of {', '.join([participant.user.username for participant in participants])}")
+        chat_name = validated_data.get('chat_name', f"Chat of {', '.join([participant.username for participant in participants])}")
 
+        print(f"validated_data {validated_data}")
         with transaction.atomic():
             ''' 
                 Create the Chat first, after the ChatParticipants
@@ -97,6 +98,7 @@ class ChatSerializer(serializers.Serializer):
 
             for participant in participants:
                 data = {'user_id': participant.pk, 'chat_id': chat.pk}
+                print(f"data: {data}")
                 serializer = ChatParticipantSerializer(data=data)
                 if serializer.is_valid():
                     data_created = serializer.create(validated_data=serializer.validated_data)                
@@ -106,7 +108,7 @@ class ChatSerializer(serializers.Serializer):
     
     def update(self, validated_data: dict) -> dict:
         chat = validated_data.get('chat', None)
-        participants = validated_data.get('participants', None)
+        participants = validated_data.get('participants_validated', None)
         chat_participants = validated_data.get('chat_participants', None)
         chat_name = validated_data.get('chat_name', None)
         
@@ -117,13 +119,13 @@ class ChatSerializer(serializers.Serializer):
             if chat_name is not None:
                 chat.chat_name = chat_name if chat.chat_name != chat_name else chat_name
 
-            chat.save()
-
             for participant in participants:
                 data = {'user_id': participant.pk, 'chat_id': chat.pk}
                 serializer = ChatParticipantSerializer(data=data)
                 if serializer.is_valid():
                     data_created = serializer.update(validated_data=serializer.validated_data)   
+            
+            chat.save()
         return chat.to_dict()
 
     def eliminate(self, validated_data: Chat):
@@ -166,8 +168,8 @@ class ChatSerializer(serializers.Serializer):
 
 class ChatParticipantSerializer(serializers.Serializer):
     chat_par_id = serializers.IntegerField(allow_null=True, required=False)
-    user = serializers.IntegerField(allow_null=True, required=False)
-    chat = serializers.IntegerField(allow_null=True, required=False)
+    user_id = serializers.IntegerField(allow_null=True, required=False)
+    chat_id = serializers.IntegerField(allow_null=True, required=False)
     date_joined = serializers.DateTimeField(allow_null=True, required=False)
 
     def __init__(self, chat_par_id=None, *args, **kwargs):
@@ -200,12 +202,12 @@ class ChatParticipantSerializer(serializers.Serializer):
         
         if chat.is_eliminated:
             raise serializers.ValidationError({'is_eliminated': "The chat is already eliminated."})
-
+        
         validated_data = {
             'chat_validated': chat if chat is not None else None,
             'user_validated': user if user is not None else None
         }
-
+        
         return validated_data
     
 
@@ -225,22 +227,22 @@ class ChatParticipantSerializer(serializers.Serializer):
         return chat_participant.to_dict()
     
     def update(self, validated_data: dict) -> dict:
-        user_id = validated_data.get('user_id', None)
-        chat_id = validated_data.get('chat_id', None)
+        user_id = validated_data.get('user_validated', None)
+        chat_id = validated_data.get('chat_validated', None)
 
         if user_id is None:
-            raise serializers.ValidationError({'user_id': "To update the parcipitand the user_id is required."})
+            raise serializers.ValidationError({'user_id': "To update the participant the user_id is required."})
         
         if chat_id is None:
-            raise serializers.ValidationError({'chat_id': "To update the parcipitand the chat_id is required."})
+            raise serializers.ValidationError({'chat_id': "To update the participant the chat_id is required."})
 
         try:
-            user = User.objects.get(pk=user_id)
+            user = User.objects.get(pk=user_id.pk)
         except User.DoesNotExist:
             raise serializers.ValidationError({'user': "The user doesn't exist or wasn't found."})
 
         try:
-            chat = Chat.objects.get(pk=chat_id)
+            chat = Chat.objects.get(pk=chat_id.pk)
         except Chat.DoesNotExist:
             raise serializers.ValidationError({'chat': "The chat doesn't exist or wasn't found."})
 

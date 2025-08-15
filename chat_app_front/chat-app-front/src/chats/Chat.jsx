@@ -38,20 +38,15 @@ function Chat({ chatData, onClose }) {
   const [message, setMessage] = useState('');
 
   const fetchChat = async () => {
-    const response = await apiRequest(`chats/${chatData.chat_id}`, 'GET');
-    console.log('chats ',response)
-    if( response.status === 200 ){
-        setChat(response)
-        setLoading(false);
+    try {
+      const response = await apiRequest(`chats/${chatData.chat_id}`, 'GET');
+      console.log('chats ',response)
+      if( response.status === 200 ){
+          setChat(response)
+      }
+    } catch (error) {
+      console.error('Error fetching chat:', error);
     }
-  }
-
-  const handleNewChat = () => {
-    console.log('handle new chat')
-  }
-
-  const handleOpenChat = () => {
-    console.log('handle open chat')
   }
 
   const handleSendMessage = () => {
@@ -69,7 +64,9 @@ function Chat({ chatData, onClose }) {
 
   useEffect(() => {
     if( loading ){
-        fetchChat();
+      setLoading(true);
+      fetchChat();
+      setLoading(false);
     }
   },[])
 
@@ -94,7 +91,7 @@ function Chat({ chatData, onClose }) {
               </Box>
             }
             sx={{ 
-              backgroundColor: "#5a4b8a",
+              backgroundColor: '#764ba2',
               color: "white",
               py: 1.5,
               '& .MuiCardHeader-title': {
@@ -165,9 +162,10 @@ function Chat({ chatData, onClose }) {
                 gap: 2
                 }}
               >
-                { chat?.messages.map( (message) => (
+                { chat?.messages?.length > 0 && 
+                  chat?.messages.map( (message) => (
                     <Message message={message} />
-                    ))                
+                  ))                
                 }
                 
               </Box>
@@ -208,7 +206,7 @@ function Chat({ chatData, onClose }) {
                 <IconButton 
                   size="small" 
                   sx={{ 
-                    bgcolor: '#5a4b8a', 
+                    bgcolor: '#764ba2', 
                     color: 'white', 
                     ml: 0.5,
                     '&:hover': { 
@@ -239,7 +237,7 @@ const Message = ({ message }) => {
         { message.user_sender == user['username'] ?
         <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
             <Paper sx={{ 
-                bgcolor: '#5a4b8a',
+                bgcolor: '#764ba2',
                 color: 'white',
                 borderRadius: '12px 12px 4px 12px',
                 p: 1.5,
