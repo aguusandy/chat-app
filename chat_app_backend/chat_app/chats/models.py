@@ -56,6 +56,7 @@ class ChatParticipant(models.Model):
     user = models.ForeignKey(User, on_delete=models.PROTECT, null=False, blank=False, related_name='users_participant')
     chat = models.ForeignKey(Chat, on_delete=models.PROTECT, null=False, blank=False, related_name='chat_participant')
     date_joined = models.DateTimeField(auto_now_add=True, editable=False)
+    is_owner = models.BooleanField(default=False)
 
     class Meta:
         db_table = 'chat_participants'
@@ -72,6 +73,7 @@ class ChatParticipant(models.Model):
             'user': { 'username': self.user.username, 'user_id': self.user.id }, 
             'chat': self.chat.chat_id,
             'date_joined': self.date_joined.strftime("%d/%m/%Y %H:%M") if self.date_joined else None,
+            'is_owner': self.is_owner
         }
 
 
@@ -100,7 +102,7 @@ class Message(models.Model):
             'message_uuid': self.message_uuid, 
             'chat_id': self.chat.chat_id,
             'user_sender': self.user_sender.username,
-            'body': self.body,
+            'body': "Message eliminated" if self.is_eliminated else self.body,
             'date_send': self.date_send.strftime("%d/%m/%Y %H:%M") if self.date_send else None,
             'is_edited': self.is_edited or False, 
             'is_eliminated': self.is_eliminated or False,

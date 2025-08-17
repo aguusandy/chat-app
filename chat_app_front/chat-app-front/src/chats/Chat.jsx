@@ -20,7 +20,9 @@ import {
     Divider,
     Avatar,
     Chip,
-    InputBase
+    InputBase,
+    Menu,
+    MenuItem
   } from '@mui/material'
 import apiRequest from '../Apis'
 import SentimentVerySatisfiedIcon from '@mui/icons-material/SentimentVerySatisfied';
@@ -31,34 +33,89 @@ import ForumIcon from '@mui/icons-material/Forum';
 import MoreVertIcon from '@mui/icons-material/MoreVert';
 import AddIcon from '@mui/icons-material/Add';
 import MoodIcon from '@mui/icons-material/Mood';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
 
 function Chat({ chatData, onClose }) {
   const [chat, setChat] = useState([]);
   const [loading, setLoading] = useState(true);
   const [message, setMessage] = useState('');
+  const [listMessages, setListMessages] = useState([]);
+  const [isEditing, setIsEditing] = useState(false);
+  const [messageEditing, setMessageEditing] = useState(null);
 
   const fetchChat = async () => {
     try {
       const response = await apiRequest(`chats/${chatData.chat_id}`, 'GET');
-      console.log('chats ',response)
       if( response.status === 200 ){
-          setChat(response)
+        setChat(response)
+        setListMessages(response.messages || []);
       }
     } catch (error) {
       console.error('Error fetching chat:', error);
     }
   }
 
+  const sendMessage = async (chatId, message) => {
+    try {
+      let body = {};
+      let url = '';
+      if (isEditing) {
+        body = {
+          'body': message,
+          'chat': chatId,
+          'is_edited': true
+        }
+        url = `chats/messages/${messageEditing.message_id}/upload_message/`;
+      }else{
+        body = {
+          'chat': chatId,
+          'body': message
+        }
+        url = `chats/messages/`;
+      }
+      const response = await apiRequest(url, 'POST', body);
+      if (response.status === 201) {
+        console.log('Message sent successfully:', response.data);
+        setListMessages((prevMessages) => [...prevMessages, response.data]);
+        setMessage('');
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
+    }
+  }
+
   const handleSendMessage = () => {
-    if (message.trim()) {
-      console.log('Sending message:', message);
-      setMessage('');
+    if ( message /*message.trim()*/ ) {
+      sendMessage(chatData.chat_id, message);
     }
   }
 
   const handleKeyPress = (event) => {
     if (event.key === 'Enter') {
       handleSendMessage();
+    }
+  }
+
+  const handleEditMessage = (messageEdit) => {
+    console.log('Editing message:', messageEdit);
+    setMessage(messageEdit.body);
+    setMessageEditing(messageEdit);
+    setIsEditing(true);
+  }
+
+  const handleDeleteMessage = async (message) => {
+     try {
+      const body = {
+        'is_eliminated': true,
+        'chat': message.chat_id
+      }
+      const response = await apiRequest(`chats/messages/${message.message_id}/eliminate_message/`, 'POST', body);
+      if (response.status === 201) {
+        console.log('Message eliminated successfully:', response.data);      
+        
+      }
+    } catch (error) {
+      console.error('Error sending message:', error);
     }
   }
 
@@ -86,7 +143,7 @@ function Chat({ chatData, onClose }) {
               <Box sx={{ display: 'flex', alignItems: 'center' }}>
                 <ForumIcon sx={{ mr: 1, fontSize: 20 }} />
                 <Typography variant="h6" sx={{ fontWeight: 600 }}>
-                  {chatData.chat_name || "Chat"}
+                  {chat.chat_name || "Chat"}
                 </Typography>
               </Box>
             }
@@ -100,7 +157,7 @@ function Chat({ chatData, onClose }) {
             }}
             action={
               <Stack direction="row" spacing={1}>
-                <IconButton
+                {/* <IconButton
                   size="small"
                   sx={{
                     color: "white",
@@ -111,7 +168,7 @@ function Chat({ chatData, onClose }) {
                   }}
                 >
                   <MoreVertIcon fontSize="small" />
-                </IconButton>
+                </IconButton> */}
                 <IconButton
                   aria-label="Cerrar"
                   size="small"
@@ -162,12 +219,11 @@ function Chat({ chatData, onClose }) {
                 gap: 2
                 }}
               >
-                { chat?.messages?.length > 0 && 
-                  chat?.messages.map( (message) => (
-                    <Message message={message} />
+                { listMessages?.length > 0 && 
+                  listMessages.map( (message) => (
+                    <Message message={message} deleteMessage={handleDeleteMessage} editMessage={handleEditMessage} />
                   ))                
-                }
-                
+                }                
               </Box>
 
               {/* Message Input */}
@@ -188,8 +244,9 @@ function Chat({ chatData, onClose }) {
                 <InputBase
                   placeholder="Type a message..."
                   value={message}
+                  autoFocus
                   onChange={(e) => setMessage(e.target.value)}
-                  onKeyPress={handleKeyPress}
+                  onKeyDown={handleKeyPress}
                   sx={{ 
                     flex: 1, 
                     px: 1.5, 
@@ -228,73 +285,109 @@ function Chat({ chatData, onClose }) {
 
 export default Chat;
 
-const Message = ({ message }) => {
-    const user = JSON.parse(sessionStorage.userData)
-    console.log('message', message)
+const Message = ({ message, deleteMessage, editMessage }) => {
+  const user = JSON.parse(sessionStorage.userData);
+  const isSender = message.user_sender === user['username'];
+  const [anchorEl, setAnchorEl] = useState(null);
+  const open = Boolean(anchorEl);
+  const handleMenuClick = (event) => {
+    setAnchorEl(event.currentTarget);
+  };
+  const handleMenuClose = () => {
+    setAnchorEl(null);
+  };
 
-    return(
-        <>
-        { message.user_sender == user['username'] ?
-        <Box sx={{ display: 'flex', justifyContent: 'flex-end' }}>
-            <Paper sx={{ 
-                bgcolor: '#764ba2',
-                color: 'white',
-                borderRadius: '12px 12px 4px 12px',
-                p: 1.5,
-                maxWidth: '80%',
-                boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-            }}>
-                <Typography variant="body2" sx={{ color: 'white' }}>
-                {message.body}
-                </Typography>
-                <Box
-                    sx={{
-                        display:'flex',
-                        direction:'row',
-                        width:'100%'
-                    }}
-                >
-                    <Typography variant="caption" sx={{ color: 'lightgray', textAlign: 'right', display: 'block', mt: 0.5, mr:2, fontStyle:'italic' }}>
-                    {!message.is_edited && 'edited'}
-                    </Typography>
-                    <Typography variant="caption" sx={{ color: 'lightgray', ml:'auto', display: 'block', mt: 0.5 }}>
-                    {message.date_send}
-                    </Typography>
-                </Box>
-            </Paper>
-        </Box>
-        :
-        <Box sx={{ display: 'flex', justifyContent: 'flex-start' }}>
-        <Paper sx={{ 
-            bgcolor: 'white',
-            borderRadius: '12px 12px 12px 4px',
-            p: 1.5,
-            maxWidth: '80%',
-            boxShadow: '0 1px 3px rgba(0,0,0,0.1)'
-        }}>
-            <Typography variant="caption" sx={{ color: 'text.secondary', mb: 0.5, display: 'block', fontSize:'17px', fontWeight:'bold' }}>
+  const handleEditMessage = () => {
+    handleMenuClose();
+    editMessage(message);
+  };
+
+  const handleDeleteMessage = () => {
+    handleMenuClose();
+    deleteMessage(message);
+  }
+
+  return (
+    <Box sx={{ display: 'flex', justifyContent: isSender ? 'flex-end' : 'flex-start' }}>
+      <Paper
+        sx={{
+          bgcolor: isSender ? '#764ba2' : 'white',
+          color: isSender ? 'white' : 'black',
+          borderRadius: isSender ? '12px 12px 4px 12px' : '12px 12px 12px 4px',
+          p: 1.5,
+          maxWidth: '80%',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+          position: 'relative'
+        }}
+      >
+        {!isSender && (
+          <Typography variant="caption" sx={{ color: 'text.secondary', mb: 0.5, display: 'block', fontSize: '17px', fontWeight: 'bold', pl:1 }}>
             {message.user_sender}
-            </Typography>
-            <Typography variant="body2">
-            {message.body}
-            </Typography>
-            <Box
-                sx={{
-                    display:'flex',
-                    direction:'row',
-                    width:'100%'
-                }}
+          </Typography>
+        )}
+        { isSender && (
+          <>
+            <IconButton
+              size="small"
+              sx={{
+                position: 'absolute',
+                top: 4,
+                right: 4,
+                color: isSender ? 'white' : 'black',
+                zIndex: 2
+              }}
+              onClick={handleMenuClick}
             >
-                <Typography variant="caption" sx={{ color: 'text.disabled', textAlign: 'right', display: 'block', mt: 0.5, mr: 2, fontStyle:'italic' }}>
-                {!message.is_edited && 'edited'}
-                </Typography>
-                <Typography variant="caption" sx={{ color: 'text.disabled', ml:'auto', display: 'block', mt: 0.5 }}>
-                {message.date_send}
-                </Typography>
-            </Box>
-        </Paper>
+              <ExpandMoreIcon fontSize="small" />
+            </IconButton>
+            <Menu
+              anchorEl={anchorEl}
+              open={open}
+              onClose={handleMenuClose}
+              anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+              transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+            >
+              <MenuItem onClick={() => handleEditMessage()}>Edit</MenuItem>
+              <MenuItem onClick={() => handleDeleteMessage()}>Delete</MenuItem>
+            </Menu>
+          </>
+        )}
+        <Typography variant="body2" sx={{ color: isSender ? 'white' : 'black', mt: isSender ? 2 : 1, fontStyle: message.is_eliminated ? 'italic' : 'none' }}>
+          {message.body}
+        </Typography>
+        <Box
+          sx={{
+            display: 'flex',
+            direction: 'row',
+            width: '100%'
+          }}
+        >
+          <Typography
+            variant="caption"
+            sx={{
+              color: isSender ? 'lightgray' : 'text.disabled',
+              textAlign: 'right',
+              display: 'block',
+              mt: 0.5,
+              mr: 2,
+              fontStyle: 'italic'
+            }}
+          >
+            {message.is_edited && 'edited'}
+          </Typography>
+          <Typography
+            variant="caption"
+            sx={{
+              color: isSender ? 'lightgray' : 'text.disabled',
+              ml: 'auto',
+              display: 'block',
+              mt: 0.5
+            }}
+          >
+            {message.date_send}
+          </Typography>
         </Box>
-        }
-        </>
-    );
+      </Paper>
+    </Box>
+  );
 }

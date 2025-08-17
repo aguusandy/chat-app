@@ -67,6 +67,7 @@ class ChatViewSet(viewsets.ViewSet):
             data = {
                 'chat_name': chat_name,
                 'participants': participants,
+                'is_owner': True
             }
             print(f"data: {data}")
 
@@ -146,7 +147,6 @@ class MessageViewSet(viewsets.ViewSet):
             Return the individual message with the information about it.
         '''
         message_id = pk
-
         try:
             serializer = self.serializer_class(message_id=message_id)
             data = serializer.data
@@ -154,11 +154,26 @@ class MessageViewSet(viewsets.ViewSet):
             return Response(data, status=status.HTTP_200_OK)
         except Exception as e:
             return Response(f"Error {e}", status=status.HTTP_400_BAD_REQUEST)
+    
+    def list(self, request):
+        """
+            Endpoint that returns the list of messages for a specific chat
+        """
+        user_id = request.GET.get('user_id', None)
+        try:
+            serializer = self.serializer_class(user_sender__user_id=user_id)
+            data = serializer.data
+
+            return Response(data, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response(f"Error {e}", status=status.HTTP_400_BAD_REQUEST)
+
 
     def create(self, request):
         """
             Endpoint that recibes the body of the message, the chat and the user who send the message
         """
+        print(f"create message")
         try:
             chat = request.data.get('chat', None)
             body = request.data.get('body', None)
@@ -166,7 +181,7 @@ class MessageViewSet(viewsets.ViewSet):
 
             data = {
                 'chat': chat,
-                'user_sender': user,
+                'user_sender': user.pk,
                 'body': body,
             }
 
@@ -174,7 +189,7 @@ class MessageViewSet(viewsets.ViewSet):
 
             if serialized.is_valid():
                 data_create = serialized.create(validated_data=serialized.validated_data)
-                return Response({"status": "Message sended succesfully"}, status=status.HTTP_201_CREATED)
+                return Response({"status": "Message sended succesfully", "data": data_create}, status=status.HTTP_201_CREATED)
             else:
                 return Response({"detail": "Failed at the moment of creation.", "error": serialized.errors}, status=status.HTTP_400_BAD_REQUEST)
         except serializers.ValidationError as a:
@@ -191,19 +206,21 @@ class MessageViewSet(viewsets.ViewSet):
         try:
             body = request.data.get('body', None)
             is_edited = request.data.get('is_edited', None)
+            chat = request.data.get('chat', None)
             user = request.user
 
             data = {
                 'message_id': message_id,
                 'body': body,
-                'user_sender': user,
+                'chat': chat,
+                'user_sender': user.pk,
                 'is_edited': is_edited,
             }
 
             serialized = self.serializer_class(data=data)
             if serialized.is_valid():
                 date_updated = serialized.update(validated_data=serialized.validated_data)
-                return Response({"status": "Message updated succesfully"}, status=status.HTTP_201_CREATED)
+                return Response({"status": "Message updated succesfully","data": date_updated}, status=status.HTTP_201_CREATED)
             else:
                 return Response({"detail": "Failed at the moment of creation.", "error": serialized.errors}, status=status.HTTP_400_BAD_REQUEST)
         except serializers.ValidationError as a:
@@ -216,16 +233,20 @@ class MessageViewSet(viewsets.ViewSet):
         message_id = pk
         try:
             is_eliminated = request.data.get('is_eliminated', None)
+            chat = request.data.get('chat', None)
             user = request.user
 
             data = {
                 'message_id': message_id,
-                'is_edited': is_eliminated,
-                'user_sender': user,
+                'is_eliminated': is_eliminated,
+                'chat': chat,
+                'user_sender': user.pk,
             }
             serialized = self.serializer_class(data=data)
             if serialized.is_valid():
                 date_eliminated = serialized.eliminate(validated_data=serialized.validated_data)
                 return Response({"status": "Message deleted succesfully"}, status=status.HTTP_200_OK)
+            else:
+                return Response({"detail": "Failed at the moment of elimination.", "error": serialized.errors}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
             return Response(f"Error {e}", status=status.HTTP_400_BAD_REQUEST)

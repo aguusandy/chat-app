@@ -7,8 +7,8 @@ app_name = 'chat'
 
 router = DefaultRouter()
 
-router.register('', ChatViewSet, basename='chats')
 router.register('messages', MessageViewSet, basename='messages')
+router.register('', ChatViewSet, basename='chats')
 
 urlpatterns = [
     path('', include(router.urls)),

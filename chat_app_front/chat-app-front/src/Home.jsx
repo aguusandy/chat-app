@@ -224,36 +224,36 @@ function Home() {
                                     direction:'row'
                                 }}    
                             >
-                                <Typography
-                                    className="chat-name"
-                                    variant="h6"
-                                    sx={{
-                                        fontWeight: 600,
-                                        marginBottom: 1,
-                                        width:'82%',
-                                        fontSize: '1.2rem',
-                                        '&:hover': {
-                                            backgroundColor: 'inherit',
-                                            color: 'white',
-                                        }
-                                    }}
-                                >
-                                    {chat.chat_name}
-                                </Typography>
-                                <Box sx={{ display:'flex', gap:1 }}>
-                                    <SendIcon 
-                                        sx={{ '&:hover': { backgroundColor: 'white', color: '#5a4b8a', borderRadius:1 } }} 
-                                        onClick={() => handleOpenChat(chat)}
-                                    />
-                                    <BorderColorIcon 
-                                        sx={{ '&:hover': { backgroundColor: 'white', color: '#5a4b8a', borderRadius:1 } }} 
-                                        onClick={() => handleEditChat(chat)}
-                                    />
-                                    <DeleteForeverIcon
-                                        sx={{ '&:hover': { backgroundColor: 'white', color: '#5a4b8a', borderRadius:1 } }} 
-                                        onClick={() => handleDeleteChat(chat)}
-                                    />
-                                </Box>
+                              <Typography
+                                  className="chat-name"
+                                  variant="h6"
+                                  sx={{
+                                      fontWeight: 600,
+                                      marginBottom: 1,
+                                      width:'82%',
+                                      fontSize: '1.2rem',
+                                      '&:hover': {
+                                          backgroundColor: 'inherit',
+                                          color: 'white',
+                                      }
+                                  }}
+                              >
+                                  {chat.chat_name}
+                              </Typography>
+                              <Box sx={{ display:'flex', gap:1 }}>
+                                <SendIcon 
+                                  sx={{ '&:hover': { backgroundColor: 'white', color: '#5a4b8a', borderRadius:1 } }} 
+                                  onClick={e => { e.stopPropagation(); handleOpenChat(chat); }} 
+                                />
+                                <BorderColorIcon 
+                                  sx={{ '&:hover': { backgroundColor: 'white', color: '#5a4b8a', borderRadius:1 } }} 
+                                  onClick={e => { e.stopPropagation(); handleEditChat(chat); }}
+                                />
+                                <DeleteForeverIcon
+                                  sx={{ '&:hover': { backgroundColor: 'white', color: '#5a4b8a', borderRadius:1 } }} 
+                                  onClick={e => { e.stopPropagation(); handleDeleteChat(chat); }}
+                                />
+                              </Box>
                             </Box>  
                             
                             <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1 }}>

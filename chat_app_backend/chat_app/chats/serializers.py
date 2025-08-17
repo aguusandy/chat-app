@@ -24,6 +24,7 @@ class ChatSerializer(serializers.Serializer):
     is_eliminated = serializers.BooleanField(allow_null=True, required=False)
     date_eliminated = serializers.DateTimeField(allow_null=True, required=False)
     chat_name = serializers.CharField(allow_null=True, required=False)
+    is_owner = serializers.BooleanField(allow_null=True, required=False)
 
     participants = serializers.ListField(child=serializers.DictField(), allow_empty=True, allow_null=True, required=False)
     
@@ -42,6 +43,7 @@ class ChatSerializer(serializers.Serializer):
         chat_participants = data.get('chat_participants', None)
         is_eliminated = data.get('is_eliminated', None)
         chat_name = data.get('chat_name', None)
+        is_owner = data.get('is_owner', None)
 
         if chat_id is None:
             if participants is None or participants == []:
@@ -77,7 +79,8 @@ class ChatSerializer(serializers.Serializer):
             'chat_participants_validated': chat_participants_validated,
             'participants_validated': participants_validated,
             'is_eliminated': is_eliminated,            
-            'chat_name': chat_name if chat_name is not None else None
+            'chat_name': chat_name if chat_name is not None else None,
+            'is_owner': is_owner if is_owner is not None else chat
         }
         return validated_data
     
@@ -85,8 +88,8 @@ class ChatSerializer(serializers.Serializer):
     def create(self, validated_data: dict) -> dict:
         participants = validated_data.get('participants_validated',None)
         chat_name = validated_data.get('chat_name', f"Chat of {', '.join([participant.username for participant in participants])}")
+        is_owner = validated_data.get('is_owner', None)
 
-        print(f"validated_data {validated_data}")
         with transaction.atomic():
             ''' 
                 Create the Chat first, after the ChatParticipants
@@ -97,8 +100,7 @@ class ChatSerializer(serializers.Serializer):
             )
 
             for participant in participants:
-                data = {'user_id': participant.pk, 'chat_id': chat.pk}
-                print(f"data: {data}")
+                data = {'user_id': participant.pk, 'chat_id': chat.pk, 'is_owner': is_owner}
                 serializer = ChatParticipantSerializer(data=data)
                 if serializer.is_valid():
                     data_created = serializer.create(validated_data=serializer.validated_data)                
@@ -147,20 +149,23 @@ class ChatSerializer(serializers.Serializer):
         representation = super().to_representation(instance)
 
         try:
-            messages_data = instance.get_messages
+            messages_data = instance.get_all_messages
+            print(f"messages_data: {messages_data} - length: {len(messages_data)}")
             messages = [message.to_dict() for message in messages_data]
         except Exception as e:
             messages = []
 
+        is_owner = False
         try:
             participants_data = instance.get_participants
             participants = [participant.to_dict() for participant in participants_data]
         except Exception as e:
+            print(f"error {e}")
             participants = []
 
         representation.update({
             'participants': participants,
-            'messages': messages,            
+            'messages': messages
         })
 
         return representation
@@ -171,6 +176,7 @@ class ChatParticipantSerializer(serializers.Serializer):
     user_id = serializers.IntegerField(allow_null=True, required=False)
     chat_id = serializers.IntegerField(allow_null=True, required=False)
     date_joined = serializers.DateTimeField(allow_null=True, required=False)
+    is_owner = serializers.BooleanField(allow_null=True, required=False)
 
     def __init__(self, chat_par_id=None, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -185,6 +191,7 @@ class ChatParticipantSerializer(serializers.Serializer):
     def validate(self, data: dict) -> dict:
         user = data.get('user_id', None)
         chat = data.get('chat_id', None)
+        is_owner = data.get('is_owner', None)
 
         if user is None:
             raise serializers.ValidationError({'user': "To create a Chat there must be some users."})
@@ -205,7 +212,8 @@ class ChatParticipantSerializer(serializers.Serializer):
         
         validated_data = {
             'chat_validated': chat if chat is not None else None,
-            'user_validated': user if user is not None else None
+            'user_validated': user if user is not None else None,
+            'is_owner': is_owner if is_owner is not None else None
         }
         
         return validated_data
@@ -221,8 +229,9 @@ class ChatParticipantSerializer(serializers.Serializer):
             '''
             chat_participant = ChatParticipant.objects.create(
                 user=user_validated,
-                chat=chat_validated
-            )                
+                chat=chat_validated,
+                is_owner=validated_data.get('is_owner', True)
+            )
 
         return chat_participant.to_dict()
     
@@ -251,6 +260,8 @@ class ChatParticipantSerializer(serializers.Serializer):
 
         chat_participant = ChatParticipant.objects.filter(user=user, chat=chat).first()
         if chat_participant:
+            if chat_participant.is_owner:
+                raise serializers.ValidationError({'chat_participant': "The owner can't be eliminated from the chat."})
             chat_participant.delete()
             return {'detail': 'The participant was eliminated succesfully from the chat.'}
         else:
@@ -287,37 +298,38 @@ class MessageSerializer(serializers.Serializer):
         is_edited = data.get('is_edited', None)
         is_eliminated = data.get('is_eliminated', None)
 
-        if chat is None:
-            raise serializers.ValidationError({'chat': "To send a message is needed a chat."})
-        else:
-            chat = Chat.objects.get(pk=chat)
-        
+        if is_eliminated is None:
+            if chat is None:
+                raise serializers.ValidationError({'chat': "To send a message is needed a chat."})
+            else:
+                chat = Chat.objects.get(pk=chat)
+            
+            chat_participant = ChatParticipant.objects.get(chat=chat,user=user_sender)
+            if chat_participant is None:
+                raise serializers.ValidationError({'not_allowed': "The user has no permission to send messages in this chat."})
+            
+            if body is None:
+                raise serializers.ValidationError({'body': "Empty messages are not allowed. Please type a text."})
+            
         if user_sender is None:
             raise serializers.ValidationError({'user_sender': "To send a message is needed a user."})
         else:
             user_sender = User.objects.get(pk=user_sender)
         
-        chat_participant = ChatParticipant.objects.get(chat=chat,user=user_sender)
         
-        if chat_participant is None:
-            raise serializers.ValidationError({'not_allowed': "The user has no permission to send messages in this chat."})
-        
-        if body is None:
-            raise serializers.ValidationError({'body': "Empty messages are not allowed. Please type a text."})
-        
+        message = None
         if message_id is not None:
             message = Message.objects.get(pk=message_id)
-            if message is not None:            
+            if message is not None and is_edited is None and is_eliminated is None:            
                 raise serializers.ValidationError({'message_id': "The message with this id is already sended."})
             
             if message.is_eliminated:
                 raise serializers.ValidationError({'is_eliminated': "The message is already eliminated."})
-        
 
         validated_data = {
             'chat': chat if chat is not None else None,
             'user_sender': user_sender if user_sender is not None else None,
-            'body': body,
+            'body': "Message eliminated" if message is not None and message.is_eliminated else body,
             'is_edited': is_edited if is_edited is not None else None,
             'is_eliminated': is_eliminated if is_eliminated is not None else None,
             'message': message if message is not None else None
