@@ -1,5 +1,5 @@
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import {
     Box,
     Card,
@@ -34,6 +34,7 @@ import MoreVertIcon from '@mui/icons-material/MoreVert';
 import AddIcon from '@mui/icons-material/Add';
 import MoodIcon from '@mui/icons-material/Mood';
 import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import useWebSocket from 'react-use-websocket';
 
 function Chat({ chatData, onClose }) {
   const [chat, setChat] = useState([]);
@@ -42,6 +43,16 @@ function Chat({ chatData, onClose }) {
   const [listMessages, setListMessages] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [messageEditing, setMessageEditing] = useState(null);
+
+  const wsUrl = `ws://localhost:8000/ws/chat/${chatData.chat_id}`;
+  const {
+    sendJsonMessage,
+    lastJsonMessage,
+    readyState
+  } = useWebSocket(wsUrl, {
+    share: false,
+    shouldReconnect: () => true,
+  });
 
   const fetchChat = async () => {
     try {
@@ -55,34 +66,43 @@ function Chat({ chatData, onClose }) {
     }
   }
 
-  const sendMessage = async (chatId, message) => {
-    try {
-      let body = {};
-      let url = '';
-      if (isEditing) {
-        body = {
-          'body': message,
+  const sendMessageWS = useCallback((chatId, msg) => {
+    const user = JSON.parse(sessionStorage.userData);
+    sendJsonMessage({
+      chat: chatId,
+      user_sender: user.username,
+      body: msg
+    });
+    setMessage('');
+  }, [sendJsonMessage]);
+
+  const sendMessage = async (chatId, msg) => {
+    if (isEditing) {
+      try {
+        const body = {
+          'body': msg,
           'chat': chatId,
           'is_edited': true
         }
-        url = `chats/messages/${messageEditing.message_id}/upload_message/`;
-      }else{
-        body = {
-          'chat': chatId,
-          'body': message
+        const url = `chats/messages/${messageEditing.message_id}/upload_message/`;
+        const response = await apiRequest(url, 'POST', body);
+        if (response.status === 201) {
+          setListMessages((prevMessages) => [...prevMessages, response.data]);
+          setMessage('');
         }
-        url = `chats/messages/`;
+      } catch (error) {
+        console.error('Error sending message:', error);
       }
-      const response = await apiRequest(url, 'POST', body);
-      if (response.status === 201) {
-        console.log('Message sent successfully:', response.data);
-        setListMessages((prevMessages) => [...prevMessages, response.data]);
-        setMessage('');
-      }
-    } catch (error) {
-      console.error('Error sending message:', error);
+    } else {
+      sendMessageWS(chatId, msg);
     }
-  }
+  };
+
+  useEffect(() => {
+    if (lastJsonMessage) {
+      setListMessages((prev) => [...prev, lastJsonMessage]);
+    }
+  }, [lastJsonMessage]);
 
   const handleSendMessage = () => {
     if ( message /*message.trim()*/ ) {
@@ -112,7 +132,6 @@ function Chat({ chatData, onClose }) {
       const response = await apiRequest(`chats/messages/${message.message_id}/eliminate_message/`, 'POST', body);
       if (response.status === 201) {
         console.log('Message eliminated successfully:', response.data);      
-        
       }
     } catch (error) {
       console.error('Error sending message:', error);

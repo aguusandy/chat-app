@@ -99,12 +99,12 @@ class Message(models.Model):
         '''
         return {
             'message_id': self.message_id,
-            'message_uuid': self.message_uuid, 
+            'message_uuid': str(self.message_uuid),
             'chat_id': self.chat.chat_id,
             'user_sender': self.user_sender.username,
             'body': "Message eliminated" if self.is_eliminated else self.body,
             'date_send': self.date_send.strftime("%d/%m/%Y %H:%M") if self.date_send else None,
-            'is_edited': self.is_edited or False, 
+            'is_edited': self.is_edited or False,
             'is_eliminated': self.is_eliminated or False,
         }
     

@@ -2,7 +2,7 @@
 
 
 This little project implements a real time chat app using React and Django. 
-Also implement Websocket with redis and redis-channel for the consuming of the messages in real time
+Also implement Websocket with redis-channel for the consuming of the messages in real time
 
 For the database i decide to implemented the following tables.
 With the objective of reducing the coding time, the SQLite was used as a predeterminated database.
@@ -11,9 +11,9 @@ With the objective of reducing the coding time, the SQLite was used as a predete
 </p>
 
 ## Features
-- **ReasctJS + Vite**
+- **ReactJS + Vite**
 - **Django Rest Framework**
-- **Redis and Redis-Channels**
+- **Redis-Channels**
 - **SQLite**
 - **Docker and Kubernets**
 
