@@ -1,5 +1,5 @@
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import {
     Box,
     Card,
@@ -43,6 +43,7 @@ function Chat({ chatData, onClose }) {
   const [listMessages, setListMessages] = useState([]);
   const [isEditing, setIsEditing] = useState(false);
   const [messageEditing, setMessageEditing] = useState(null);
+  const messagesEndRef = useRef(null);
 
   const wsUrl = `ws://localhost:8000/ws/chat/${chatData.chat_id}`;
   const {
@@ -54,45 +55,26 @@ function Chat({ chatData, onClose }) {
     shouldReconnect: () => true,
   });
 
-  const fetchChat = async () => {
-    try {
-      const response = await apiRequest(`chats/${chatData.chat_id}`, 'GET');
-      if( response.status === 200 ){
-        setChat(response)
-        setListMessages(response.messages || []);
-      }
-    } catch (error) {
-      console.error('Error fetching chat:', error);
-    }
-  }
-
-  const sendMessageWS = useCallback((chatId, msg) => {
+  const sendMessageWS = useCallback((chatId, msg, action = 'create', messageId = null) => {
     const user = JSON.parse(sessionStorage.userData);
-    sendJsonMessage({
+    const body = {
       chat: chatId,
       user_sender: user.username,
-      body: msg
-    });
+      body: msg,
+      action: action
+    };
+    if (action === 'edit' && messageId) {
+      body.message_id = messageId;
+    }
+    sendJsonMessage(body);
     setMessage('');
   }, [sendJsonMessage]);
 
   const sendMessage = async (chatId, msg) => {
-    if (isEditing) {
-      try {
-        const body = {
-          'body': msg,
-          'chat': chatId,
-          'is_edited': true
-        }
-        const url = `chats/messages/${messageEditing.message_id}/upload_message/`;
-        const response = await apiRequest(url, 'POST', body);
-        if (response.status === 201) {
-          setListMessages((prevMessages) => [...prevMessages, response.data]);
-          setMessage('');
-        }
-      } catch (error) {
-        console.error('Error sending message:', error);
-      }
+    if (isEditing && messageEditing) {
+      sendMessageWS(chatId, msg, 'edit', messageEditing.message_id);
+      setIsEditing(false);
+      setMessageEditing(null);
     } else {
       sendMessageWS(chatId, msg);
     }
@@ -100,9 +82,21 @@ function Chat({ chatData, onClose }) {
 
   useEffect(() => {
     if (lastJsonMessage) {
-      setListMessages((prev) => [...prev, lastJsonMessage]);
+      if (lastJsonMessage.is_edited) {
+        setListMessages((prev) => prev.map(m => m.message_id === lastJsonMessage.message_id ? lastJsonMessage : m));
+      } else if (lastJsonMessage.is_eliminated) {
+        setListMessages((prev) => prev.map(m => m.message_id === lastJsonMessage.message_id ? lastJsonMessage : m));
+      } else {
+        setListMessages((prev) => [...prev, lastJsonMessage]);
+      }
     }
   }, [lastJsonMessage]);
+
+  useEffect(() => {
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
+    }
+  }, [listMessages]);
 
   const handleSendMessage = () => {
     if ( message /*message.trim()*/ ) {
@@ -123,18 +117,26 @@ function Chat({ chatData, onClose }) {
     setIsEditing(true);
   }
 
-  const handleDeleteMessage = async (message) => {
-     try {
-      const body = {
-        'is_eliminated': true,
-        'chat': message.chat_id
-      }
-      const response = await apiRequest(`chats/messages/${message.message_id}/eliminate_message/`, 'POST', body);
-      if (response.status === 201) {
-        console.log('Message eliminated successfully:', response.data);      
+  const handleDeleteMessage = (messageToDelete) => {
+    const user = JSON.parse(sessionStorage.userData);
+    const body = {
+      chat: messageToDelete.chat_id,
+      user_sender: user.username,
+      action: 'delete',
+      message_id: messageToDelete.message_id
+    }
+    sendJsonMessage(body);
+  }
+
+  const fetchChat = async () => {
+    try {
+      const response = await apiRequest(`chats/${chatData.chat_id}`, 'GET');
+      if( response.status === 200 ){
+        setChat(response)
+        setListMessages(response.messages || []);
       }
     } catch (error) {
-      console.error('Error sending message:', error);
+      console.error('Error fetching chat:', error);
     }
   }
 
@@ -242,7 +244,8 @@ function Chat({ chatData, onClose }) {
                   listMessages.map( (message) => (
                     <Message message={message} deleteMessage={handleDeleteMessage} editMessage={handleEditMessage} />
                   ))                
-                }                
+                }
+                <div ref={messagesEndRef} />
               </Box>
 
               {/* Message Input */}

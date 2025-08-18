@@ -150,7 +150,7 @@ class ChatSerializer(serializers.Serializer):
 
         try:
             messages_data = instance.get_all_messages
-            print(f"messages_data: {messages_data} - length: {len(messages_data)}")
+            # print(f"messages_data: {messages_data} - length: {len(messages_data)}")
             messages = [message.to_dict() for message in messages_data]
         except Exception as e:
             messages = []

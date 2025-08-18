@@ -6,7 +6,8 @@ from channels.db import database_sync_to_async
 from chats.models import Message, Chat
 from chats.serializers import MessageSerializer
 from django.contrib.auth import get_user_model
-from django.db import transaction
+
+# https://channels.readthedocs.io/en/latest/tutorial/part_3.html
 
 
 class ChatConsumer(AsyncWebsocketConsumer):
@@ -21,17 +22,25 @@ class ChatConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         data = json.loads(text_data)
-        
-        # with transaction.atomic():
-        message = await self.create_message(data)
-        print(f"message created - {message}")
-        await self.channel_layer.group_send(
-            self.room_group_name,
-            {
-                'type': 'chat_message',
-                'message': message.to_dict()
-            }
-        )
+        action = data.get('action', 'create')
+        message = None
+        if action == 'create':
+            message = await self.create_message(data)
+        elif action == 'edit':
+            message = await self.edit_message(data)
+        elif action == 'delete':
+            message = await self.delete_message(data)
+        else:
+            print(f"Unknown action: {action}")
+            return
+        if message:
+            await self.channel_layer.group_send(
+                self.room_group_name,
+                {
+                    'type': 'chat_message',
+                    'message': message.to_dict()
+                }
+            )
 
     async def chat_message(self, event):
         await self.send(text_data=json.dumps(event['message']))
@@ -48,3 +57,35 @@ class ChatConsumer(AsyncWebsocketConsumer):
             is_edited=False,
             is_eliminated=False
         )
+
+    @database_sync_to_async
+    def edit_message(self, data):
+        User = get_user_model()
+        user = User.objects.get(username=data['user_sender'])
+        message = Message.objects.get(pk=data['message_id'])
+        new_body = data['body']
+        serializer = MessageSerializer()
+        validated_data = {
+            'message': message,
+            'body': new_body,
+            'user_sender': user,
+            'is_edited': True
+        }
+        updated_message_dict = serializer.update(validated_data)
+        message.refresh_from_db()
+        return message
+
+    @database_sync_to_async
+    def delete_message(self, data):
+        User = get_user_model()
+        user = User.objects.get(username=data['user_sender'])
+        message = Message.objects.get(pk=data['message_id'])
+        serializer = MessageSerializer()
+        validated_data = {
+            'message': message,
+            'is_eliminated': True,
+            'user_sender': user
+        }
+        eliminated_message_dict = serializer.eliminate(validated_data)
+        message.refresh_from_db()
+        return message
