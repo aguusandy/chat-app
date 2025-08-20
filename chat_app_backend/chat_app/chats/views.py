@@ -43,7 +43,7 @@ class ChatViewSet(viewsets.ViewSet):
         '''
         user_chats = Chat.objects.filter(
             chat_participant__user=request.user
-        ).exclude(is_eliminated=True)
+        ).exclude(is_eliminated=True).order_by('-date_created')
     
         serialized_chats = []
         for chat in user_chats:

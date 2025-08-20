@@ -7,8 +7,9 @@ from chats.models import Message, Chat
 from chats.serializers import MessageSerializer
 from django.contrib.auth import get_user_model
 
-# https://channels.readthedocs.io/en/latest/tutorial/part_3.html
+from .utils import ChatBot, is_bot_chat
 
+# https://channels.readthedocs.io/en/latest/tutorial/part_3.html
 
 class ChatConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -25,7 +26,7 @@ class ChatConsumer(AsyncWebsocketConsumer):
         action = data.get('action', 'create')
         message = None
         if action == 'create':
-            message = await self.create_message(data)
+            message = await self.create_message(data)            
         elif action == 'edit':
             message = await self.edit_message(data)
         elif action == 'delete':
@@ -41,6 +42,26 @@ class ChatConsumer(AsyncWebsocketConsumer):
                     'message': message.to_dict()
                 }
             )
+        # if the bot chat is in the conversation 
+        bot_chat = await is_bot_chat(data['chat'])
+        if bot_chat:
+            bot = ChatBot(thread_id=str(self.chat_id))
+            bot_response = bot.answer(data['body'])
+            
+            bot_message_data = {
+                'user_sender': "bot",
+                'chat': data['chat'],
+                'body': bot_response
+            }
+            bot_message = await self.create_message(bot_message_data)
+            if bot_message:
+                await self.channel_layer.group_send(
+                    self.room_group_name,
+                    {
+                        'type': 'chat_message',
+                        'message': bot_message.to_dict()
+                    }
+                )
 
     async def chat_message(self, event):
         await self.send(text_data=json.dumps(event['message']))
