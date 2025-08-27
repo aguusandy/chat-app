@@ -13,7 +13,8 @@ import {
   Collapse,
   IconButton,
   AlertTitle,
-  CircularProgress
+  CircularProgress,
+  Link
 } from '@mui/material'
 import './App.css'
 import apiRequest from './Apis'
@@ -65,7 +66,7 @@ function LoginComponent({ setShowAvatar }) {
   return (
     <Box
       sx={{
-        minHeight: '90vh',
+        minHeight: '95vh',
         display: 'flex',
         alignItems: 'center',
         justifyContent: 'center',
@@ -209,6 +210,24 @@ function LoginComponent({ setShowAvatar }) {
                   <LoginIcon />
                 }
               </Button>
+              <Box
+                sx={{
+                  my:1
+                }}
+              >
+                <Box sx={{ display:'flex', direction:'row', alignItems: 'center', gap:1 }}>
+                  <Typography>
+                    Don't have an account?
+                  </Typography>
+                  <Typography
+                    onClick={() => {navigate('/register')}}
+                    sx={{ color: '#5a6fd8', textDecoration:'underline', cursor:'pointer' }}
+                  >
+                    Sign Up
+                  </Typography>
+
+                </Box>
+              </Box>
 
             </CardContent>
           </Card>
