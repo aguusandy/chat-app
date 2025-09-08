@@ -51,7 +51,6 @@ With the objective of reducing the coding time, the SQLite was used as a predete
  <p align="center">
   <img src="https://github.com/aguusandy/chat-app/blob/master/imgs/der_chat_app.png" alt="DER" width="700"/>
 </p>
-### 
 
 # 🤖 Chat Bot
 This project also implements a chatbot using LLMs models. Keeping the structure of the Websocket consumer, the chatbot is implemented as a specific user 'bot'.
