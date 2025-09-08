@@ -158,10 +158,10 @@ function Register() {
                   }}
                 >
                   Chat App Register
-                </Typography>             
-                <Box sx={{ display:'flex', justifyContent:'center', alignItems:'center', flexDirection:'row', gap:1 }}>
+                </Typography>
+                <Box sx={{ display:'flex', justifyContent:'center', alignItems:'center', flexDirection:'row', gap:1, width:'100%' }}>
                   <TextField
-                    width="50%"
+                    fullWidth
                     label="First Name"
                     variant="outlined"
                     value={firstname}
@@ -173,7 +173,7 @@ function Register() {
                     }}
                   />
                   <TextField
-                    width="50%"
+                    fullWidth
                     label="Last Name"
                     variant="outlined"
                     value={lastname}

@@ -13,7 +13,7 @@ services:
       - DEBUG=1
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - OLLAMA_HOST=http://host.docker.internal:11434
+      - OLLAMA_HOST=host.docker.internal:11434
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:

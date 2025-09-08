@@ -1,23 +1,12 @@
-# Chat App 
+# 📩 Chat App 
 
 
 This little project implements a real time chat app using React and Django. 
-Also implement Websocket with redis-channel for the consuming of the messages in real time
+Also implement Websocket with redis-channel for the consuming of the messages in real time.
 
-For the database i decide to implemented the following tables.
-With the objective of reducing the coding time, the SQLite was used as a predeterminated database.
- <p align="center">
-  <img src="https://github.com/aguusandy/chat-app/blob/master/imgs/der_chat_app.png" alt="DER" width="700"/>
-</p>
+###
 
-## Features
-- **ReactJS + Vite**
-- **Django Rest Framework**
-- **Redis-Channels**
-- **SQLite**
-- **Docker and Kubernets**
-
-### Download and run
+## Download and run it
 
 1. Clone the repository
 
@@ -29,5 +18,62 @@ With the objective of reducing the coding time, the SQLite was used as a predete
 
    ```bash
     cd chat-app
-    docker compose up
+    docker compose up --build
    ```
+###
+## ✅ Recommendations
+- #### Run the migrations
+While the docker containers are running, open a terminal and run this command:
+```
+docker compose run backend python chat_app/manage.py migrate
+```
+
+- #### Create a superuser
+Is recommended create a superuser for the app, so you can use de 'admin' path. 
+To create a **superuser** for the app run the following command in a terminal:
+```
+docker compose run backend python chat_app/manage.py createsuperuser
+```
+###
+## ⚙️ Libraries
+- **ReactJS + Vite**
+- **Django Rest Framework**
+- **Redis-Channels**
+- **SQLite**
+- **Docker and Kubernets**
+- **Langchain**
+- **Ollama**
+
+###
+## 🛢️ Database Diagram
+The next ER Diagram represents the tables used in this project.
+With the objective of reducing the coding time, the SQLite was used as a predeterminated database.
+ <p align="center">
+  <img src="https://github.com/aguusandy/chat-app/blob/master/imgs/der_chat_app.png" alt="DER" width="700"/>
+</p>
+### 
+
+# 🤖 Chat Bot
+Thist project also implements a chatbot using LLMs models. Keeping the structure of the Websocket consummer, the chatbot is implemented as a specific user 'bot'.
+
+The migration **0001_create_bot_user.py** in the accounts app is crutial for the chatbot, because this migration create the user that will be instanced in the ChatConsumer.  
+
+If you run the command of the migrate suggested en **Recommendations** it should work fine. If you didn't or the 0001 migration didn't pass, please run the following command.
+
+```
+docker compose run backend python chat_app/manage.py migrate accounts 0001
+```
+
+### ChatBot Class
+The ChatBot Class is defined in chat_app/utils.py for easy access.
+This class instance the LLM model and the thread_id (the same id of the chat_id). The base langague is English, but it can be change by passing as an argument of the class. The prompt_template is quite simple, so it can rewrite for the specific politics.
+
+The chatbot was made it with Langchain and Ollama, because was orientated for AI models running locally. But, if you have a key for Cloud AI, smalls changes in the code and the docker-compose should make it work.
+
+The model used was **llama3.2** running in the localhost port **11434** and the ollama host is defined in the docker-compose.
+
+#### Who works:
+The ChatBot class is instanced if the 'bot' user was added to the chat. If a message if receive in the consummer, this message will be send to the ChatBot. 
+
+The message is used as the question, so the invoke function will return the answer of the AI model, and this answer create another message in the chat.
+

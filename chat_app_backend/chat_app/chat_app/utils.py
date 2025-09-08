@@ -1,5 +1,7 @@
 import os
-os.environ["OLLAMA_BASE_URL"] = "http://proxy-ollama:11434"
+# Configura OLLAMA_BASE_URL desde la variable de entorno OLLAMA_HOST, o usa valor por defecto
+os.environ["OLLAMA_BASE_URL"] = os.environ.get("OLLAMA_HOST", "http://127.0.0.1:11434")
+
 
 from langchain_core.prompts import ChatPromptTemplate, MessagesPlaceholder
 from typing_extensions import Annotated, TypedDict

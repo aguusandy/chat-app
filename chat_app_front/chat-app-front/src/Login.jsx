@@ -190,6 +190,7 @@ function LoginComponent({ setShowAvatar }) {
                 variant="contained"
                 size="large"
                 onClick={handleLogin}
+                onKeyPress={(e) => { if(e.key === 'Enter') handleLogin() }}
                 sx={{
                   borderRadius: 2,
                   padding: 1.5,
