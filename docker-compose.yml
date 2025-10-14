@@ -7,17 +7,22 @@ services:
     command: python chat_app/manage.py runserver 0.0.0.0:8000
     volumes:
       - ./chat_app_backend:/app
+      - backend-chat:/app/data
     ports:
       - "8000:8000"
     environment:
       - DEBUG=1
       - REDIS_HOST=redis
       - REDIS_PORT=6379
-      - OLLAMA_HOST=host.docker.internal:11434
+      - OLLAMA_HOST=http://ollama:11434
     extra_hosts:
       - "host.docker.internal:host-gateway"
     depends_on:
       - redis
+      - ollama
+      - chroma
+    networks:
+      - chat_network
 
   frontend:
     build:
@@ -27,14 +32,63 @@ services:
       - "5173:5173"
     volumes:
       - ./chat_app_front/chat-app-front:/app
+      - frontend-chat:/app/dist
       - /app/node_modules
     environment:
       - CHOKIDAR_USEPOLLING=true
     depends_on:
       - backend
+    networks:
+      - chat_network
 
   redis:
     image: redis:7-alpine
     container_name: chat-redis
     ports:
       - "6379:6379"
+    volumes:
+      - redis-chat:/data
+    networks:
+      - chat_network
+
+  ollama:
+    image: ollama/ollama:latest
+    container_name: ollama
+    ports:
+      - "11435:11434"
+    volumes:
+      - ollama-chat:/root/.ollama
+    environment:
+      - OLLAMA_HOST=0.0.0.0
+    networks:
+      - chat_network
+    restart: unless-stopped
+    entrypoint: ["/bin/bash", "-c", "\
+      ollama serve & \
+      sleep 5 && \
+      ollama pull mxbai-embed-large && \
+      ollama pull llama3.2 && \
+      wait"]
+  
+  chroma:
+    image: ghcr.io/chroma-core/chroma:latest
+    container_name: chroma-db-simple
+    ports:
+      - "9012:9000"
+    volumes:
+      - chroma-chat:/chroma
+    networks:
+      - chat_network
+    restart: unless-stopped
+
+
+networks:
+  chat_network:
+    driver: bridge
+
+volumes:
+  frontend-chat:
+  backend-chat:
+  redis-chat:
+  ollama-chat:
+  chroma-chat:
