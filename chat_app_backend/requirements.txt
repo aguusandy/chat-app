@@ -9,3 +9,5 @@ langchain
 langchain-core
 langgraph==0.2.27
 langchain-ollama
+langchain-chroma
+langchain-community

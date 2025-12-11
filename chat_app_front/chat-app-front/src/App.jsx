@@ -9,6 +9,7 @@ import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import Home from './Home'
 import ResponsiveAppBar from './ResponsiveAppBar'
 import { Stack } from '@mui/material'
+import RAG from './RAG'
 
 
 function App() {
@@ -23,6 +24,7 @@ function App() {
           <Routes>
             <Route path="/" element={<LoginComponent setShowAvatar={setShowAvatar} />} />
             <Route path="/home" element={<Home />} />
+            <Route path="/rag" element={<RAG />} />
             <Route path="/register" element={<Register />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>

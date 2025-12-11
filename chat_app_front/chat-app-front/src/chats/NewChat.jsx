@@ -109,7 +109,7 @@ function NewChat({ onClose, setRefresh }) {
           }}
           action={
             <Stack direction="row" spacing={1}>
-              <IconButton
+              {/*<IconButton
                 size="small"
                 sx={{
                   color: "#764ba2",
@@ -121,6 +121,7 @@ function NewChat({ onClose, setRefresh }) {
               >
                 <MoreVertIcon fontSize="small" />
               </IconButton>
+              */}
               <IconButton
                 aria-label="Close"
                 size="small"

@@ -156,6 +156,7 @@ function Chat({ chatData, onClose }) {
           borderRadius: 2,
           height: '600px',
           display: 'flex',
+          maxWidth: '75vw',
           flexDirection: 'column'
         }}>
           {/* Header */}

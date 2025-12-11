@@ -16,8 +16,16 @@ Also, implement Websocket with redis-channel for the consuming of the messages i
 
 2. Run the Docker
 
+   If you will use the ChatBot, it's recommended run first the ollama service, so this can pull the model before the others services initialize.
+
+
    ```bash
     cd chat-app
+    docker compose run ollama --wait
+   ```
+
+   After that:
+   ```bash
     docker compose up --build
    ```
 ###

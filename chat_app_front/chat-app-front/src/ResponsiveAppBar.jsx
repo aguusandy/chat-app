@@ -8,6 +8,8 @@ import ChevronLeftIcon from '@mui/icons-material/ChevronLeft';
 import ChevronRightIcon from '@mui/icons-material/ChevronRight';
 import ChatIcon from '@mui/icons-material/Chat';
 import HelpIcon from '@mui/icons-material/Help';
+import MessageIcon from '@mui/icons-material/Message';
+import InsertPageBreakIcon from '@mui/icons-material/InsertPageBreak';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import { useState } from 'react';
 import { Divider, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText } from '@mui/material';
@@ -71,6 +73,11 @@ function ResponsiveAppBar({ showAvatar, setShowAvatar }) {
     return color;
   }
 
+  const changePage = (path) => {
+    setOpen(false);
+    navigate(path);
+  }
+
 
   const logOut = () => {
     if( sessionStorage.token ){
@@ -132,23 +139,39 @@ function ResponsiveAppBar({ showAvatar, setShowAvatar }) {
             </DrawerHeader>
             <Divider />
             <List >
-            <ListItem key={0} disablePadding>
+              <ListItem key={0} disablePadding>
+                <ListItemButton onClick={() => changePage('/home')}>
+                    <ListItemIcon>
+                      <MessageIcon sx={{  color:'white' }}/>
+                    </ListItemIcon>
+                    <ListItemText primary={"Chats"} />
+                </ListItemButton>
+              </ListItem>
+              <ListItem key={0} disablePadding>
+                <ListItemButton onClick={() => changePage('/rag')}>
+                    <ListItemIcon>
+                      <InsertPageBreakIcon sx={{  color:'white' }}/>
+                    </ListItemIcon>
+                    <ListItemText primary={"RAG"} />
+                </ListItemButton>
+              </ListItem>
+              <ListItem key={0} disablePadding>
                 <ListItemButton>
                     <ListItemIcon>
-                        <HelpIcon sx={{  color:'white' }}/>
+                      <HelpIcon sx={{  color:'white' }}/>
                     </ListItemIcon>
                     <ListItemText primary={"About"} />
                 </ListItemButton>
-                </ListItem>
-                <Divider />
-                <ListItem key={1} disablePadding onClick={ () => logOut() }>
-                  <ListItemButton>
-                    <ListItemIcon>
-                        <ExitToAppIcon sx={{  color:'white' }}/>
-                    </ListItemIcon>
-                    <ListItemText primary={"Log out"} />
-                  </ListItemButton>
-                </ListItem>
+              </ListItem>
+              <Divider />
+              <ListItem key={1} disablePadding onClick={ () => logOut() }>
+                <ListItemButton>
+                  <ListItemIcon>
+                    <ExitToAppIcon sx={{  color:'white' }}/>
+                  </ListItemIcon>
+                  <ListItemText primary={"Log out"} />
+                </ListItemButton>
+              </ListItem>
             </List>
         </Drawer>
       }
