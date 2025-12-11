@@ -1,0 +1,85 @@
+
+
+from rest_framework import serializers
+from django.db import transaction
+from django.conf import settings
+from django.contrib.auth.models import User
+import os, random
+from .models import FilesUser
+
+class FilesUserSerializer(serializers.ModelSerializer):
+	user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
+	files = serializers.ListField(child=serializers.FileField(), write_only=True, required=True)
+
+	class Meta:
+		model = FilesUser
+		fields = ['id', 'filename', 'file_type', 'user', 'date_created', 'is_visible', 'files']
+		read_only_fields = ['id', 'date_created']
+
+	def validate(self, attrs):
+		user = attrs.get('user')
+		files = attrs.get('files')
+		allowed_types = [
+			"application/doc",
+			"application/docx",
+			"application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+			"application/msword",
+			"application/pdf"
+		]
+		if not User.objects.filter(id=user.id).exists():
+			raise serializers.ValidationError({'user': 'User does not exist.'})
+		for f in files:
+			if hasattr(f, 'content_type') and f.content_type not in allowed_types:
+				raise serializers.ValidationError({'files': f"File type not allowed: {f.name}"})
+		return attrs
+
+	def create(self, validated_data):
+		user = validated_data['user']
+		files = validated_data.pop('files')
+		created_files = []
+		media_path = os.path.join(settings.MEDIA_ROOT, 'user_files/')
+		os.makedirs(media_path, exist_ok=True)
+		with transaction.atomic():
+			for archivo in files:
+				filename = archivo.name.replace(" ", "_")
+				file_path = os.path.join(media_path, filename)
+				if os.path.exists(file_path):
+					filename = f'{str(random.random()).split(".")[1]}_{archivo.name}'
+					file_path = os.path.join(media_path, filename)
+				with open(file_path, 'wb+') as f:
+					for chunk in archivo.chunks():
+						f.write(chunk)
+				file_type = getattr(archivo, 'content_type', '')
+				file_instance = FilesUser.objects.create(
+					user=user,
+					filename=filename,
+					file_type=file_type
+				)
+				created_files.append(file_instance)
+		return created_files
+
+	def files(self, data: dict) -> str:
+		filename = data.get('filename', None)
+		user_id = data.get('user_id', None)
+		if not filename:
+			raise serializers.ValidationError({'filename': "Filename not specified."})
+		if not user_id:
+			raise serializers.ValidationError({'user_id': "Field required. Cannot be null."})
+		try:
+			user = User.objects.get(id=user_id)
+		except User.DoesNotExist:
+			raise serializers.ValidationError({'user_id': "User not found."})
+		file_qs = FilesUser.objects.filter(user=user, filename=filename, is_visible=True)
+		if not file_qs.exists():
+			raise serializers.ValidationError({'file': "File not found for this user."})
+		media_path = os.path.join(settings.MEDIA_ROOT, 'user_files', filename)
+		if not os.path.exists(media_path):
+			raise serializers.ValidationError({'media_path': "File does not exist."})
+		return media_path
+
+	def to_representation(self, instance):
+		rep = super().to_representation(instance)
+		rep['user'] = instance.user.username if instance.user else None
+		return rep
+
+    
