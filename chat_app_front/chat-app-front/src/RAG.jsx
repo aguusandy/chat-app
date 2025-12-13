@@ -147,8 +147,7 @@ function RAG() {
     setFiles(newFiles);
   };
 
-  const handleUploadFiles = async () => {
-
+  const handleSelectFile = () => {
   }
 
   const handleSaveFiles = async () => {
@@ -362,7 +361,7 @@ function RAG() {
                             color: 'white',
                           },
                         }}
-                        onClick={handleUploadFiles}
+                        onClick={handleSelectFile}
                       >
                         <PictureAsPdfIcon />
                         Select File
