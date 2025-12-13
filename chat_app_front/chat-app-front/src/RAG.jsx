@@ -32,11 +32,13 @@ import SendIcon from '@mui/icons-material/Send';
 import BorderColorIcon from '@mui/icons-material/BorderColor';
 import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import BackupIcon from '@mui/icons-material/Backup';
-
 import CloseIcon from "@mui/icons-material/Close";
+import CheckCircleIcon from '@mui/icons-material/CheckCircle';
+
 import SeeFile from './components/SeeFIle';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
+import { set } from 'lodash';
 
 
 const VisuallyHiddenInput = styled('input')({
@@ -70,13 +72,11 @@ function RAG() {
 
   const [fileSelected, setFileSelected] = useState(null);
   const [openModalFile, setOpenModalFile] = useState(false);
+  const [newFilesToLoad, setNewFilesToLoad] = useState(false);
+
+  const [validatedFiles, setValidatedFiles] = useState([]);
 
   const fileTypes = [
-    // "image/bmp",
-    // "image/gif",
-    // "image/jpg",
-    // "image/jpeg",
-    // "image/png",
     "application/doc",
     "application/docx",
     "application/vnd.openxmlformats-officedocument.wordprocessingml.document", // docx
@@ -108,6 +108,7 @@ function RAG() {
         setFiles(newFiles);
         setError(false);
         setErrorMessage('');
+        setNewFilesToLoad(true);
         // setFilesLoaded(true);
       }else{
         setError(true);
@@ -150,34 +151,33 @@ function RAG() {
 
   }
 
-    const handleGuardar = () => {
-    // console.log('guardar archivo')
-    // let archivos_vector = [];
-    // archivos.map((archivo)=>{
-    //   const file = archivo;
-    //   const formData = new FormData();
-    //   formData.append('file', file);
-    // })
-    // archivosSubidos.forEach((elem) => formData.append("archivos", elem.file));
-
+  const handleSaveFiles = async () => {
     const formData = new FormData();
-    // aca mando un objecto "formData" con 1-n "archivos", donde cada uno va a tener un solo archivo
-    archivos.forEach((file) =>  formData.append('archivos', file) );
-  // body json
-    const data = {
-      "estudio_id": estudio.id,
-      "observaciones": informe || null,
-      // "archivos": archivos
-    };
-    formData.append("estudio_id",estudio.id);
-    formData.append("observaciones",informe);
-
-  //   formData.append(
-  //     "data",
-  //     JSON.stringify( data )
-  // );
-
-    onSubmit(formData);
+    const filesFiltered = files.filter(file => !validatedFiles.includes(file.name));
+    for (let i = 0; i < filesFiltered.length; i++) {
+      formData.append('files', filesFiltered[i]);
+    }
+    
+    try {
+      const response = await apiRequest('filesuser/', 'POST', formData);
+      
+      if (response.status === 200 || response.status === 201) {
+        const newValidatedFiles = response.files.map(f => f.filename);
+        setValidatedFiles([...validatedFiles, ...newValidatedFiles]);
+        setError(false);
+        setErrorMessage('');
+        setFilesLoaded(true);
+        setNewFilesToLoad(false);
+      } else {
+        setError(true);
+        setErrorMessage('Error saving files.' + (response.detail ? response.detail : ''));
+      }
+    } catch (error) {
+      console.log('Error saving files:', error);
+      setError(true);
+      setErrorMessage('Error saving files.' + (error.detail ? error.detail : ''));
+      return;
+    }
   };
 
 
@@ -208,12 +208,12 @@ function RAG() {
         paddingTop: 4
       }}
     >
-    <Container maxWidth="sm">
+    <Container maxWidth="md">
         <Paper
           elevation={8}
           sx={{
             borderRadius: 3,
-            maxWidth: '75vw',
+            maxWidth: '80vw',
             width: '100%',
             overflow: 'hidden'
           }}
@@ -249,104 +249,126 @@ function RAG() {
                 Welcome {userData.username} to the RAG section
               </Typography>
                 <Box
-                    sx={{ display: 'flex', flexDirection: 'row', mb:'auto', gap:2, mx:'auto', height:'8vh',  }}
-                    >
-                    { files.length === 0 ?
-                    <Typography 
-                        sx={{
-                        fontWeight: '16px',
-                        color: 'text.primary',
-                        my:'auto'
-                        }}
-                    >
-                        No files loaded yet.
-                    </Typography> 
-                    :
-                    <Typography 
-                        component="h1"
-                        sx={{
-                        fontWeight: '16px',
-                        color: 'text.primary',
-                        my:'auto'
-                        }}
-                      >
-                        <Button 
+                    sx={{
+                      display: 'flex',
+                      flexDirection: 'row',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      mb: 'auto',
+                      gap: 2,
+                      mx: 'auto',
+                      height: '8vh',
+                    }}
+                  >
+                    <Box sx={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                      {files.length === 0 ? (
+                        <Typography
                           sx={{
-                            border: 2,
-                            color: '#764ba2',
-                            borderRadius: 4,
-                            cursor: 'pointer',
-                            mr:1,
-                            backgroundColor: 'transparent',
-                            '&:hover': {
+                            fontWeight: '16px',
+                            color: 'text.primary',
+                            mb: 0.5,
+                          }}
+                        >
+                          No files loaded yet.
+                        </Typography>
+                      ) : 
+                      ( newFilesToLoad &&
+                        <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', height: '100%' }}>
+                          <Button
+                            sx={{
+                              height: '6vh',
+                              border: 2,
+                              color: '#764ba2',
+                              borderRadius: 4,
+                              cursor: 'pointer',
+                              mr: 1,
+                              backgroundColor: 'transparent',
+                              display: 'flex',
+                              alignItems: 'center',
+                              '&:hover': {
                                 backgroundColor: '#764ba2',
                                 borderColor: '#764ba2',
                                 color: 'white',
-                            }
-                          }}
-                          onClick={handleUploadFiles}
-                        >
-                          <BackupIcon />
-                          Save
-                        </Button>
-                        {files.length} files
-                    </Typography>
-                    }
-                    <Button 
+                              },
+                            }}
+                            onClick={handleSaveFiles}
+                          >
+                            <BackupIcon />
+                            Save
+                          </Button>
+                          <Typography
+                            sx={{
+                              color: 'text.primary',
+                              ml: 1,
+                              fontWeight:'bold'
+                            }}
+                          > 
+                            {files.filter(file => !validatedFiles.includes(file.name)).length} files
+                          </Typography>
+                        </Box>
+                      )}
+                    </Box>
+                    <Button
                       sx={{
-                        height:'6vh',
+                        height: '6vh',
                         border: 2,
                         color: '#764ba2',
                         borderRadius: 4,
-                        my:'auto',
+                        mx: 1,
                         cursor: 'pointer',
                         backgroundColor: 'transparent',
+                        display: 'flex',
+                        alignItems: 'center',
                         '&:hover': {
-                            backgroundColor: '#764ba2',
-                            borderColor: '#764ba2',
-                            color: 'white',
-                        }
+                          backgroundColor: '#764ba2',
+                          borderColor: '#764ba2',
+                          color: 'white',
+                        },
                       }}
                       component="label"
                       role={undefined}
                       variant="contained"
                       tabIndex={-1}
                     >
-                      <AttachFileIcon/>
-                        Load Files
+                      <AttachFileIcon />
+                      Load Files
                       <VisuallyHiddenInput type="file" onChange={handleFileChange} />
                     </Button>
-                    <Typography 
+                    <Box sx={{ display: 'flex', flexDirection: 'row', alignItems: 'center', justifyContent: 'center', height: '100%' }}>
+                      <Typography
                         component="h1"
                         sx={{
-                        fontWeight: '16px',
-                        color: 'text.primary',
-                        my:'auto'
+                          fontWeight: '16px',
+                          color: 'text.primary',
+                          mb: 0.5,
                         }}
                       >
                         Or
-                        <Button 
-                          sx={{
-                            ml:1,
-                            border: 2,
-                            color: '#764ba2',
-                            borderRadius: 4,
-                            cursor: 'pointer',
-                            backgroundColor: 'transparent',
-                            '&:hover': {
-                                backgroundColor: '#764ba2',
-                                borderColor: '#764ba2',
-                                color: 'white',
-                            }
-                          }}
-                          onClick={handleUploadFiles}
-                        >
-                          <PictureAsPdfIcon />
-                          Select FIle
-                        </Button>
-                    </Typography>
-                    
-                </Box>
+                      </Typography>
+                      <Button
+                        sx={{
+                          height: '6vh',
+                          border: 2,
+                          color: '#764ba2',
+                          borderRadius: 4,
+                          ml: 1,
+                          cursor: 'pointer',
+                          backgroundColor: 'transparent',
+                          display: 'flex',
+                          alignItems: 'center',
+                          '&:hover': {
+                            backgroundColor: '#764ba2',
+                            borderColor: '#764ba2',
+                            color: 'white',
+                          },
+                        }}
+                        onClick={handleUploadFiles}
+                      >
+                        <PictureAsPdfIcon />
+                        Select File
+                      </Button>
+                    </Box>
+                  </Box>
                 <Stack>
                   <Box
                     sx={{
@@ -370,13 +392,24 @@ function RAG() {
                                   >
                                     {file.name}
                                   </TableCell>
-                                  { !filesLoaded &&
+                                  { !filesLoaded && !validatedFiles.includes(file.name) &&
                                     <TableCell 
                                       align="right"
                                       sx={{ maxHeight: '5vh', height: '5vh', overflow: 'hidden', padding: 0 }}
                                     >
                                       <CloseIcon
                                         sx={{ color: "red", cursor:'pointer' }}
+                                        onClick={() => handleDelete(index)}
+                                      />
+                                    </TableCell>
+                                  }
+                                  { validatedFiles.includes(file.name) &&
+                                    <TableCell 
+                                      align="right"
+                                      sx={{ maxHeight: '5vh', height: '5vh', overflow: 'hidden', padding: 0, mr:2 }}
+                                    >
+                                      <CheckCircleIcon
+                                        sx={{ color: "green", cursor:'pointer' }}
                                         onClick={() => handleDelete(index)}
                                       />
                                     </TableCell>

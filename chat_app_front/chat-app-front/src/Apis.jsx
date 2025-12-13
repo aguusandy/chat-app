@@ -14,17 +14,21 @@ const apiRequest = async (url, method, data = null) => {
 
     const options = {
       method: method.toUpperCase(),
-      headers: {
-        'Content-Type': 'application/json',
-      }
+      headers: {}
     };
-  
+
     if (token) {
       options.headers['Authorization'] = `Token ${token}`;
     }
-  
+
     if (data && method.toUpperCase() !== 'GET') {
-      options.body = JSON.stringify(data);
+      if (data instanceof FormData) {
+        options.body = data;
+        // No seteamos Content-Type, el navegador lo hace automáticamente
+      } else {
+        options.headers['Content-Type'] = 'application/json';
+        options.body = JSON.stringify(data);
+      }
     }
   
     const fullUrl = url.startsWith('http') ? url : `${baseUrl}${url}`;

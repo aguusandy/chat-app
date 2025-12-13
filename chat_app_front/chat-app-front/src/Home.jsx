@@ -107,12 +107,12 @@ function Home() {
         paddingTop: 4
       }}
     >
-    <Container maxWidth="sm">
+    <Container maxWidth="md">
         <Paper
           elevation={8}
           sx={{
             borderRadius: 3,
-            maxWidth: '75vw',
+            maxWidth: '80vw',
             width: '100%',
             overflow: 'hidden'
           }}
