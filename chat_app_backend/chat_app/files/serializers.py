@@ -9,16 +9,18 @@ from .models import FilesUser
 
 class FilesUserSerializer(serializers.ModelSerializer):
 	user = serializers.PrimaryKeyRelatedField(queryset=User.objects.all())
-	files = serializers.ListField(child=serializers.FileField(), write_only=True, required=True)
+	filename = serializers.CharField(read_only=True)
+	file_type = serializers.CharField(read_only=True)
+	# files = serializers.ListField(child=serializers.FileField(), write_only=True, required=True)
 
 	class Meta:
 		model = FilesUser
-		fields = ['id', 'filename', 'file_type', 'user', 'date_created', 'is_visible', 'files']
+		fields = ['id', 'filename', 'file_type', 'user', 'date_created', 'is_visible']
 		read_only_fields = ['id', 'date_created']
 
-	def validate(self, attrs):
-		user = attrs.get('user')
-		files = attrs.get('files')
+	def validate(self, data):
+		user = data.get('user')
+		files = data.get('files')
 		allowed_types = [
 			"application/doc",
 			"application/docx",
@@ -28,10 +30,18 @@ class FilesUserSerializer(serializers.ModelSerializer):
 		]
 		if not User.objects.filter(id=user.id).exists():
 			raise serializers.ValidationError({'user': 'User does not exist.'})
+		
+		if not files or len(files) == 0:
+			raise serializers.ValidationError({'files': "At least one file must be provided."})
 		for f in files:
 			if hasattr(f, 'content_type') and f.content_type not in allowed_types:
 				raise serializers.ValidationError({'files': f"File type not allowed: {f.name}"})
-		return attrs
+		validated_data = {
+			'user': user,
+			'files': files
+
+		}
+		return validated_data
 
 	def create(self, validated_data):
 		user = validated_data['user']
@@ -44,7 +54,7 @@ class FilesUserSerializer(serializers.ModelSerializer):
 				filename = archivo.name.replace(" ", "_")
 				file_path = os.path.join(media_path, filename)
 				if os.path.exists(file_path):
-					filename = f'{str(random.random()).split(".")[1]}_{archivo.name}'
+					# filename = f'{str(random.random()).split(".")[1]}_{archivo.name}'
 					file_path = os.path.join(media_path, filename)
 				with open(file_path, 'wb+') as f:
 					for chunk in archivo.chunks():
@@ -60,15 +70,12 @@ class FilesUserSerializer(serializers.ModelSerializer):
 
 	def files(self, data: dict) -> str:
 		filename = data.get('filename', None)
-		user_id = data.get('user_id', None)
+		user = data.get('user', None)
 		if not filename:
 			raise serializers.ValidationError({'filename': "Filename not specified."})
-		if not user_id:
-			raise serializers.ValidationError({'user_id': "Field required. Cannot be null."})
-		try:
-			user = User.objects.get(id=user_id)
-		except User.DoesNotExist:
-			raise serializers.ValidationError({'user_id': "User not found."})
+		if not user:
+			raise serializers.ValidationError({'user': "Field required. Cannot be null."})
+		
 		file_qs = FilesUser.objects.filter(user=user, filename=filename, is_visible=True)
 		if not file_qs.exists():
 			raise serializers.ValidationError({'file': "File not found for this user."})

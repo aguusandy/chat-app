@@ -26,16 +26,14 @@ class FilesUserViewSet(viewsets.ViewSet):
             user = request.user
             files = request.FILES.getlist('files', None)
             if not files:
-                return Response({'detail': 'No files uploaded.'}, status=status.HTTP_400_BAD_REQUEST)
-
+                return Response({'detail': 'No files sended to upload.'}, status=status.HTTP_400_BAD_REQUEST)
+            
             data = {
-                'user': user.id,
+                'user': user,
                 'files': files
             }
-
-            serializer = FilesUserSerializer(data=data)
-            serializer.is_valid(raise_exception=True)
-            created_files = serializer.save()
+            serializer = FilesUserSerializer()
+            created_files = serializer.create(data)
             return Response({
                 'status': 'Success. Files uploaded correctly.',
                 'files': [FilesUserSerializer(f).data for f in created_files]
@@ -49,13 +47,13 @@ class FilesUserViewSet(viewsets.ViewSet):
     def files(self, request, pk=None):
         """
         Returns a file for a user
-        GET /filesuser/{user_id}/files?filename=filename
+        GET /filesuser/files?filename=filename
         """
         try:
-            user_id = pk
+            user = request.user
             filename = request.query_params.get('filename', None)
             data = {
-                'user_id': user_id,
+                'user': user,
                 'filename': filename
             }
             serializer = FilesUserSerializer()
