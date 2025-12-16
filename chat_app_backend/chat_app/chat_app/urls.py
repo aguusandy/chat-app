@@ -22,5 +22,6 @@ urlpatterns = [
     path('admin/', admin.site.urls),
     path('api-auth/', include('rest_framework.urls')),  # DRF browsable API
     path('chats/', include('chats.urls'), name='chats'),
-    path('api/', include('accounts.urls'))
+    path('filesuser/', include('files.urls'), name='files'),
+    path('api/', include('accounts.urls')),
 ]

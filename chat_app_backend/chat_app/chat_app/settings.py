@@ -43,6 +43,7 @@ INSTALLED_APPS = [
     'corsheaders',
     'accounts',
     'chats',
+    'files',
 ]
 
 MIDDLEWARE = [
@@ -166,5 +167,11 @@ CSRF_EXEMPT_URLS = [
     r'^chats/.*$',
 ]
 
+
 CORS_ALLOW_ALL_ORIGINS = True  
 CORS_ALLOW_CREDENTIALS = True
+
+# Media files (uploads)
+import os
+MEDIA_URL = '/media/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'media')

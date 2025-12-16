@@ -12,7 +12,7 @@ import MessageIcon from '@mui/icons-material/Message';
 import InsertPageBreakIcon from '@mui/icons-material/InsertPageBreak';
 import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import { useState } from 'react';
-import { Divider, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText } from '@mui/material';
+import { Box, Button, Divider, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText } from '@mui/material';
 import { styled, useTheme } from '@mui/material/styles';
 import { useNavigate } from 'react-router-dom'
 
@@ -96,9 +96,14 @@ function ResponsiveAppBar({ showAvatar, setShowAvatar }) {
         <AppBar position="fixed" open={open} sx={{ backgroundColor:"#121212" }}>
         <Toolbar>
           <ChatIcon />
-          <Typography variant="h5" noWrap component="div" flex={1} mx={8}>
+          <Typography variant="h5" noWrap >
             Chat APP
           </Typography>
+          <Box sx={{ display:'flex', direction:'row', gap:2 }} component="div" flex={1} mx={8}>
+            <Button color="inherit" onClick={() => changePage('/home')} sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}>Chats</Button>
+            <Button color="inherit" onClick={() => changePage('/rag')} sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}>RAG</Button>
+          </Box>
+
           { showAvatar &&
             <IconButton
                 color="inherit"
