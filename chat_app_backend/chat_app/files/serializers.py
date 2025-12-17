@@ -68,7 +68,7 @@ class FilesUserSerializer(serializers.ModelSerializer):
 				created_files.append(file_instance)
 		return created_files
 
-	def files(self, data: dict) -> str:
+	def get_file(self, data: dict) -> str:
 		filename = data.get('filename', None)
 		user = data.get('user', None)
 		if not filename:
@@ -83,6 +83,19 @@ class FilesUserSerializer(serializers.ModelSerializer):
 		if not os.path.exists(media_path):
 			raise serializers.ValidationError({'media_path': "File does not exist."})
 		return media_path
+	
+	def files(self, user: User) -> list:
+		if not user:
+			raise serializers.ValidationError({'user': "User required. Cannot be null."})
+		file_qs = FilesUser.objects.filter(user=user, is_visible=True)
+		files_list = []
+		files_list.append({
+			'filename': f.filename,
+			'file_type': f.file_type,
+			'date_created': f.date_created
+		} for f in file_qs)
+
+		return files_list
 
 	def to_representation(self, instance):
 		rep = super().to_representation(instance)

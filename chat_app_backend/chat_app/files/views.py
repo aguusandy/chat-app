@@ -43,11 +43,11 @@ class FilesUserViewSet(viewsets.ViewSet):
         except Exception as e:
             return Response({'detail': 'Error processing request', 'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
-    @action(methods=['GET'], detail=True, url_path='files', url_name='files')
-    def files(self, request, pk=None):
+    @action(methods=['GET'], detail=True, url_path='get_file', url_name='get_file')
+    def get_file(self, request, pk=None):
         """
         Returns a file for a user
-        GET /filesuser/files?filename=filename
+        GET /filesuser/get_file?filename=filename
         """
         try:
             user = request.user
@@ -57,8 +57,25 @@ class FilesUserViewSet(viewsets.ViewSet):
                 'filename': filename
             }
             serializer = FilesUserSerializer()
-            file_path = serializer.files(data)
-            return FileResponse(open(file_path, 'rb'), status=status.HTTP_200_OK)
+            file_path = serializer.get_file(data)
+            file = open(file_path, 'rb')
+            return FileResponse(file, status=status.HTTP_200_OK)
+        except serializers.ValidationError as a:
+            return Response({'detail': 'Validation error', 'error': a.detail}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception as e:
+            return Response({'detail': 'Error processing request', 'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
+        
+    @action(methods=['GET'], detail=True, url_path='files', url_name='files')
+    def files(self, request, pk=None):
+        """
+        Returns a file for a user
+        GET /filesuser/files
+        """
+        try:
+            user = request.user
+            serializer = FilesUserSerializer()
+            list_files = serializer.files(user=user)
+            return Response({'list_files': list_files}, status=status.HTTP_200_OK)
         except serializers.ValidationError as a:
             return Response({'detail': 'Validation error', 'error': a.detail}, status=status.HTTP_400_BAD_REQUEST)
         except Exception as e:
