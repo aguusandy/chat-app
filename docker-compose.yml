@@ -4,7 +4,7 @@ services:
       context: ./chat_app_backend
       dockerfile: chat_app/Dockerfile
     container_name: chat-backend
-    command: python chat_app/manage.py runserver 0.0.0.0:8000
+    command: uvicorn chat_app.asgi:application --host 0.0.0.0 --port 8000 
     volumes:
       - ./chat_app_backend:/app
       - backend-chat:/app/data

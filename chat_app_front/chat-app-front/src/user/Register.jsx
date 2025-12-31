@@ -16,8 +16,8 @@ import {
   CircularProgress,
   Link
 } from '@mui/material'
-import './App.css'
-import apiRequest from './Apis'
+import '../App.css'
+import apiRequest from '../Apis'
 import CloseIcon from '@mui/icons-material/Close';
 import PersonAddAlt1Icon from '@mui/icons-material/PersonAddAlt1';
 

@@ -8,10 +8,6 @@ import {
     Button,
     Container,
     Paper,
-    Alert,
-    Collapse,
-    IconButton,
-    AlertTitle,
     Modal,
     Grid,
     LinearProgress
@@ -43,9 +39,9 @@ function Home() {
 
     try {
       const response = await apiRequest('chats', 'GET');
-      console.log('chats ',response)
+      
       if( response.status === 200 ){
-          setChats(response.chats)
+        setChats(response.chats)
       }
     } catch (error) {
       console.log('Error fetching chats:', error);
@@ -53,12 +49,10 @@ function Home() {
   }
 
   const handleNewChat = () => {
-    console.log('handle new chat')
     setOpenNewChat(true);
   }
 
   const handleOpenChat = (chat) => {
-    console.log('handle open chat', chat)
     setChatSelected(chat)
     setOpenChat(true);
   } 
@@ -69,13 +63,11 @@ function Home() {
   }
 
   const handleEditChat = (chat) => {
-    console.log('edit chat', chat)
     setChatSelected(chat)
     setOpenEditChat(true);
   }
 
   const handleDeleteChat = (chat) => {
-    console.log('delete chat')
     setChatSelected(chat);
     setOpenDeleteChat(true);
   }
@@ -114,6 +106,7 @@ function Home() {
             borderRadius: 3,
             maxWidth: '80vw',
             width: '100%',
+            mx:'auto',
             overflow: 'hidden'
           }}
         >

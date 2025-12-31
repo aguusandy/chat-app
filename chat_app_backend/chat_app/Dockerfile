@@ -8,11 +8,11 @@ ENV PYTHONUNBUFFERED 1
 RUN apt-get update && apt-get install -y build-essential libpq-dev
 
 
-WORKDIR /app
+WORKDIR /app/chat_app
 
 
 COPY requirements.txt /app/
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir -r /app/requirements.txt
 COPY . /app/
 
 # RUN pip install gunicorn

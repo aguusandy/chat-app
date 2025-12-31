@@ -69,11 +69,9 @@ class ChatViewSet(viewsets.ViewSet):
                 'participants': participants,
                 'is_owner': True
             }
-            print(f"data: {data}")
 
             serialized = ChatSerializer(data=data)
             if serialized.is_valid():
-                print(f"valitated data {serialized.validated_data}")
                 data_create = serialized.create(validated_data=serialized.validated_data)
                 return Response({"status": "Chat created succesfully"}, status=status.HTTP_201_CREATED)
             else:

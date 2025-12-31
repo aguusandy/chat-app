@@ -8,10 +8,8 @@ import {
     Button,
     Container,
     Paper,
-    Alert,
     Collapse,
     IconButton,
-    AlertTitle,
     Modal,
     Grid,
     InputBase,
@@ -25,20 +23,16 @@ import {
     TableCell,
     TableRow
   } from '@mui/material'
-import './App.css'
-import apiRequest from './Apis'
-import SentimentVerySatisfiedIcon from '@mui/icons-material/SentimentVerySatisfied';
+import '../App.css'
+import apiRequest from '../Apis'
 import SendIcon from '@mui/icons-material/Send';
-import BorderColorIcon from '@mui/icons-material/BorderColor';
-import DeleteForeverIcon from '@mui/icons-material/DeleteForever';
 import BackupIcon from '@mui/icons-material/Backup';
 import CloseIcon from "@mui/icons-material/Close";
 import CheckCircleIcon from '@mui/icons-material/CheckCircle';
 
-import SeeFile from './components/SeeFIle';
+import SeeFile from './SeeFIle';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import AttachFileIcon from '@mui/icons-material/AttachFile';
-import { set } from 'lodash';
 
 
 const VisuallyHiddenInput = styled('input')({
@@ -51,7 +45,6 @@ const VisuallyHiddenInput = styled('input')({
   left: 0,
   whiteSpace: 'nowrap',
   width: 1,
-  // type:'file'
 });
 
 

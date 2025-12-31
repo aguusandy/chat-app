@@ -1,15 +1,14 @@
-import { useEffect, useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
+import { useState } from 'react'
 import './App.css'
-import LoginComponent from './Login'
-import Register from './Register'
+import LoginComponent from './user/Login'
+import Register from './user/Register'
 
 import { BrowserRouter, Route, Routes, Navigate } from "react-router-dom";
 import Home from './Home'
 import ResponsiveAppBar from './ResponsiveAppBar'
 import { Stack } from '@mui/material'
-import RAG from './RAG'
+import RAG from './rag/RAG'
+import UserAccount from './user/UserAccount';
 
 
 function App() {
@@ -26,6 +25,7 @@ function App() {
             <Route path="/home" element={<Home />} />
             <Route path="/rag" element={<RAG />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/user" element={<UserAccount />} />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
         </Stack>

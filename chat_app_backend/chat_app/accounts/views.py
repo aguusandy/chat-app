@@ -75,3 +75,20 @@ def user_search(request):
             for user in users
         ]
         return Response(data, status=status.HTTP_200_OK)
+    
+@api_view(['GET'])
+@permission_classes([IsAuthenticated])
+def user_profile(request):
+    if request.method == 'GET':
+        try:
+            user = request.user
+            data = {
+                'user_id': user.id,
+                'username': user.username,
+                'email': user.email,
+                'first_name': user.first_name,
+                'last_name': user.last_name
+            }
+            return Response({"data": data}, status=status.HTTP_200_OK)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_500_INTERNAL_SERVER_ERROR)

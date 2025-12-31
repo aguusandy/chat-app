@@ -14,7 +14,8 @@ import ExitToAppIcon from '@mui/icons-material/ExitToApp';
 import { useState } from 'react';
 import { Box, Button, Divider, Drawer, List, ListItem, ListItemButton, ListItemIcon, ListItemText } from '@mui/material';
 import { styled, useTheme } from '@mui/material/styles';
-import { useNavigate } from 'react-router-dom'
+import { useNavigate } from 'react-router-dom';
+import capitalizeFirstLetter from './Utils';
 
 
 const DrawerHeader = styled('div')(({ theme }) => ({
@@ -74,8 +75,10 @@ function ResponsiveAppBar({ showAvatar, setShowAvatar }) {
   }
 
   const changePage = (path) => {
-    setOpen(false);
-    navigate(path);
+    if( sessionStorage.token && path !== '' ){
+      setOpen(false);
+      navigate(path);
+    }
   }
 
 
@@ -95,10 +98,12 @@ function ResponsiveAppBar({ showAvatar, setShowAvatar }) {
     <>
         <AppBar position="fixed" open={open} sx={{ backgroundColor:"#121212" }}>
         <Toolbar>
-          <ChatIcon />
-          <Typography variant="h5" noWrap >
-            Chat APP
-          </Typography>
+          <Button color="inherit" onClick={() => changePage('')} sx={{ display:'flex', flexDirection:'row', gap:1 }}>
+            <ChatIcon />
+            <Typography variant="h5" noWrap >
+              Chat APP
+            </Typography>
+          </Button>
           <Box sx={{ display:'flex', direction:'row', gap:2 }} component="div" flex={1} mx={8}>
             <Button color="inherit" onClick={() => changePage('/home')} sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}>Chats</Button>
             <Button color="inherit" onClick={() => changePage('/rag')} sx={{ '&:hover': { backgroundColor: 'rgba(255, 255, 255, 0.1)' } }}>RAG</Button>
@@ -145,6 +150,14 @@ function ResponsiveAppBar({ showAvatar, setShowAvatar }) {
             <Divider />
             <List >
               <ListItem key={0} disablePadding>
+                <ListItemButton onClick={() => changePage('/user')}>
+                    <ListItemIcon>
+                        <Avatar {...stringAvatar( sessionStorage.userData || 'User')} />
+                    </ListItemIcon>
+                    <ListItemText primary={ capitalizeFirstLetter( JSON.parse(sessionStorage.userData)['username'] ) } />
+                </ListItemButton>
+              </ListItem>
+              <ListItem key={1} disablePadding>
                 <ListItemButton onClick={() => changePage('/home')}>
                     <ListItemIcon>
                       <MessageIcon sx={{  color:'white' }}/>
@@ -152,7 +165,7 @@ function ResponsiveAppBar({ showAvatar, setShowAvatar }) {
                     <ListItemText primary={"Chats"} />
                 </ListItemButton>
               </ListItem>
-              <ListItem key={0} disablePadding>
+              <ListItem key={2} disablePadding>
                 <ListItemButton onClick={() => changePage('/rag')}>
                     <ListItemIcon>
                       <InsertPageBreakIcon sx={{  color:'white' }}/>
@@ -160,7 +173,7 @@ function ResponsiveAppBar({ showAvatar, setShowAvatar }) {
                     <ListItemText primary={"RAG"} />
                 </ListItemButton>
               </ListItem>
-              <ListItem key={0} disablePadding>
+              <ListItem key={3} disablePadding>
                 <ListItemButton>
                     <ListItemIcon>
                       <HelpIcon sx={{  color:'white' }}/>
@@ -169,7 +182,7 @@ function ResponsiveAppBar({ showAvatar, setShowAvatar }) {
                 </ListItemButton>
               </ListItem>
               <Divider />
-              <ListItem key={1} disablePadding onClick={ () => logOut() }>
+              <ListItem key={4} disablePadding onClick={ () => logOut() }>
                 <ListItemButton>
                   <ListItemIcon>
                     <ExitToAppIcon sx={{  color:'white' }}/>

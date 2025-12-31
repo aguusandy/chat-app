@@ -13,13 +13,13 @@ import {
   Collapse,
   IconButton,
   AlertTitle,
-  CircularProgress,
-  Link
+  CircularProgress
 } from '@mui/material'
-import './App.css'
-import apiRequest from './Apis'
+import '../App.css'
+import apiRequest from '../Apis'
 import CloseIcon from '@mui/icons-material/Close';
 import LoginIcon from '@mui/icons-material/Login';
+import theme from '../Theme'
 
 function LoginComponent({ setShowAvatar }) {
   const [username, setUsername] = useState('')
@@ -38,7 +38,7 @@ function LoginComponent({ setShowAvatar }) {
 
     try {
       const response = await apiRequest('api/login/', 'POST', body);
-      console.log('response ',response)
+      
       if( response.status === 200 ){
         if( response.token ){
           sessionStorage.setItem('token', response.token)
@@ -59,10 +59,6 @@ function LoginComponent({ setShowAvatar }) {
     setLogin(false);
   }
 
-  useEffect(() => {
-    console.log('login app')
-  },[])
-
   return (
     <Box
       sx={{
@@ -76,6 +72,7 @@ function LoginComponent({ setShowAvatar }) {
     >
       <Container maxWidth="sm">
         <Paper
+          onKeyPress={(e) => { if(e.key === 'Enter') handleLogin() }}
           elevation={8}
           sx={{
             borderRadius: 3,
@@ -119,22 +116,11 @@ function LoginComponent({ setShowAvatar }) {
                 component="h1"
                 sx={{
                   fontWeight: 600,
-                  color: 'text.primary',
+                  color: theme.palette.primary.main,
                   marginBottom: 1
                 }}
               >
-                Log In
-              </Typography>
-
-              <Typography
-                variant="body2"
-                sx={{
-                  color: 'text.secondary',
-                  marginBottom: 3,
-                  textAlign: 'center'
-                }}
-              >
-                To use the message service please login with you account.
+                Log In With Your Account
               </Typography>
 
               <TextField
@@ -190,7 +176,6 @@ function LoginComponent({ setShowAvatar }) {
                 variant="contained"
                 size="large"
                 onClick={handleLogin}
-                onKeyPress={(e) => { if(e.key === 'Enter') handleLogin() }}
                 sx={{
                   borderRadius: 2,
                   padding: 1.5,
